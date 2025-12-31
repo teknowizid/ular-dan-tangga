@@ -5,6 +5,28 @@ Semua perubahan penting pada project ini akan didokumentasikan di file ini.
 Format berdasarkan [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 dan project ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2024-12-31
+
+### 🎨 Splash Screen Update
+
+### Added
+
+#### Splash Screen
+- ✅ 🎨 Splash screen saat pertama kali membuka aplikasi
+- ✅ ⏱️ Loading screen dengan durasi minimum 2 detik
+- ✅ 🖼️ Menggunakan `assets/splash.png` sebagai splash image
+- ✅ 🎯 Smooth transition dari splash ke home screen
+- ✅ 📱 Support untuk iOS, Android, dan Web
+
+### Technical
+- Added `expo-splash-screen` package
+- Updated `App.tsx` dengan splash screen logic
+- Updated `app.json` splash configuration
+- Splash screen menggunakan `resizeMode: "cover"` untuk full screen
+- Background color: `#4CAF50` (hijau)
+
+---
+
 ## [1.4.0] - 2024-12-31
 
 ### 🎲 Bonus Roll 6 & Collision Update
@@ -289,6 +311,7 @@ Rilis pertama Snake & Ladder Game dengan fitur lengkap untuk single player dan m
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 1.5.0 | 2024-12-31 | Splash screen on app launch |
 | 1.4.0 | 2024-12-31 | Bonus roll 6, collision/tabrakan feature |
 | 1.3.0 | 2024-12-31 | Indonesian language localization |
 | 1.2.0 | 2024-12-31 | Player avatars, session tracking, bounce back rule |

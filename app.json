@@ -2,15 +2,15 @@
   "expo": {
     "name": "Snake & Ladder Game",
     "slug": "snake-ladder-game",
-    "version": "1.0.0",
+    "version": "1.5.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "scheme": "snakeladder",
     "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
+      "image": "./assets/splash.png",
+      "resizeMode": "cover",
       "backgroundColor": "#4CAF50"
     },
     "ios": {
