@@ -12,7 +12,8 @@ import {
   Modal,
 } from 'react-native'
 import { multiplayerService, OnlineRoom } from '../services/multiplayerService'
-import { PLAYER_COLORS } from '../types/game'
+import { AVATAR_COLORS } from '../types/game'
+import AvatarPicker from '../components/AvatarPicker'
 
 interface LobbyScreenProps {
   navigation: any
@@ -20,7 +21,7 @@ interface LobbyScreenProps {
 
 export default function LobbyScreen({ navigation }: LobbyScreenProps) {
   const [playerName, setPlayerName] = useState('')
-  const [selectedColor, setSelectedColor] = useState(PLAYER_COLORS[0])
+  const [selectedAvatar, setSelectedAvatar] = useState(1)
   const [rooms, setRooms] = useState<OnlineRoom[]>([])
   const [loading, setLoading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
@@ -49,6 +50,11 @@ export default function LobbyScreen({ navigation }: LobbyScreenProps) {
     setRefreshing(false)
   }
 
+  // Get color based on avatar
+  const getAvatarColor = (avatar: number) => {
+    return AVATAR_COLORS[avatar] || AVATAR_COLORS[1]
+  }
+
   const handleCreateRoom = async () => {
     if (!playerName.trim()) {
       Alert.alert('Error', 'Masukkan nama kamu dulu')
@@ -63,7 +69,8 @@ export default function LobbyScreen({ navigation }: LobbyScreenProps) {
     const result = await multiplayerService.createRoom(
       newRoomName.trim(),
       playerName.trim(),
-      selectedColor
+      getAvatarColor(selectedAvatar),
+      selectedAvatar
     )
     setLoading(false)
 
@@ -89,11 +96,19 @@ export default function LobbyScreen({ navigation }: LobbyScreenProps) {
       return
     }
 
+    // Check if avatar is taken in the room
+    const takenAvatars = await multiplayerService.getTakenAvatarsInRoom(roomCode.trim().toUpperCase())
+    if (takenAvatars.includes(selectedAvatar)) {
+      Alert.alert('Avatar Sudah Dipakai', 'Pilih avatar lain yang belum dipakai pemain lain')
+      return
+    }
+
     setLoading(true)
     const result = await multiplayerService.joinRoom(
       roomCode.trim().toUpperCase(),
       playerName.trim(),
-      selectedColor
+      getAvatarColor(selectedAvatar),
+      selectedAvatar
     )
     setLoading(false)
 
@@ -116,11 +131,19 @@ export default function LobbyScreen({ navigation }: LobbyScreenProps) {
       return
     }
 
+    // Check if avatar is taken in the room
+    const takenAvatars = await multiplayerService.getTakenAvatarsInRoom(room.roomCode)
+    if (takenAvatars.includes(selectedAvatar)) {
+      Alert.alert('Avatar Sudah Dipakai', 'Pilih avatar lain yang belum dipakai pemain lain')
+      return
+    }
+
     setLoading(true)
     const result = await multiplayerService.joinRoom(
       room.roomCode,
       playerName.trim(),
-      selectedColor
+      getAvatarColor(selectedAvatar),
+      selectedAvatar
     )
     setLoading(false)
 
@@ -132,7 +155,7 @@ export default function LobbyScreen({ navigation }: LobbyScreenProps) {
         isHost: false,
       })
     } else {
-      Alert.alert('Error', 'Gagal join room. Mungkin sudah penuh.')
+      Alert.alert('Error', 'Gagal join room. Mungkin sudah penuh atau avatar sudah dipakai.')
     }
   }
 
@@ -140,7 +163,7 @@ export default function LobbyScreen({ navigation }: LobbyScreenProps) {
     <View style={styles.container}>
       {/* Player Setup */}
       <View style={styles.setupCard}>
-        <Text style={styles.setupTitle}>👤 Setup Player</Text>
+        <Text style={styles.setupTitle}>👤 Pengaturan Pemain</Text>
         <TextInput
           style={styles.input}
           placeholder="Nama kamu"
@@ -148,19 +171,11 @@ export default function LobbyScreen({ navigation }: LobbyScreenProps) {
           onChangeText={setPlayerName}
           maxLength={20}
         />
-        <View style={styles.colorPicker}>
-          {PLAYER_COLORS.map((color) => (
-            <Pressable
-              key={color}
-              style={[
-                styles.colorOption,
-                { backgroundColor: color },
-                selectedColor === color && styles.colorSelected,
-              ]}
-              onPress={() => setSelectedColor(color)}
-            />
-          ))}
-        </View>
+        <AvatarPicker
+          selectedAvatar={selectedAvatar}
+          onSelect={setSelectedAvatar}
+          size="medium"
+        />
       </View>
 
       {/* Action Buttons */}
@@ -326,21 +341,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0e0e0',
     marginBottom: 12,
-  },
-  colorPicker: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  colorOption: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 3,
-    borderColor: 'transparent',
-  },
-  colorSelected: {
-    borderColor: '#333',
-    transform: [{ scale: 1.15 }],
   },
   actionRow: {
     flexDirection: 'row',

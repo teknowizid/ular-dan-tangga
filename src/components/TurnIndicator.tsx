@@ -19,11 +19,11 @@ export default function TurnIndicator({
   const getStatusText = () => {
     switch (gameStatus) {
       case 'waiting':
-        return 'Waiting for players...'
+        return 'Menunggu pemain...'
       case 'playing':
-        return currentPlayer ? `${currentPlayer.name}'s Turn` : 'Game in progress'
+        return currentPlayer ? `Giliran ${currentPlayer.name}` : 'Game sedang berlangsung'
       case 'finished':
-        return 'Game Over!'
+        return 'Game Selesai!'
       default:
         return ''
     }
@@ -39,14 +39,14 @@ export default function TurnIndicator({
         ]}
       >
         <Text style={styles.statusLabel}>
-          {gameStatus === 'playing' ? 'Current Turn' : 'Status'}
+          {gameStatus === 'playing' ? 'Giliran Saat Ini' : 'Status'}
         </Text>
         <Text style={styles.turnText}>{getStatusText()}</Text>
       </View>
 
       {/* Players list */}
       <View style={styles.playersContainer}>
-        <Text style={styles.playersLabel}>Players ({allPlayers.length}/4)</Text>
+        <Text style={styles.playersLabel}>Pemain ({allPlayers.length}/4)</Text>
         <View style={styles.playersList}>
           {allPlayers.map((player, index) => (
             <View

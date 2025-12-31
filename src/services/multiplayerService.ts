@@ -17,6 +17,7 @@ export interface OnlinePlayer {
   roomId: string
   playerName: string
   playerColor: string
+  avatar?: number
   position: number
   isHost: boolean
   isCurrentTurn: boolean
@@ -81,7 +82,7 @@ class MultiplayerService {
   /**
    * Create a new game room
    */
-  async createRoom(roomName: string, hostName: string, hostColor: string): Promise<{ room: OnlineRoom; player: OnlinePlayer } | null> {
+  async createRoom(roomName: string, hostName: string, hostColor: string, avatar: number = 1): Promise<{ room: OnlineRoom; player: OnlinePlayer } | null> {
     try {
       // Create room using function
       const { data: roomData, error: roomError } = await supabase
@@ -101,6 +102,7 @@ class MultiplayerService {
           room_id: room_id,
           player_name: hostName,
           player_color: hostColor,
+          avatar: avatar,
           is_host: true,
           is_current_turn: true,
           player_order: 0,
@@ -129,6 +131,7 @@ class MultiplayerService {
         roomId: room_id,
         playerName: hostName,
         playerColor: hostColor,
+        avatar: avatar,
         position: 1,
         isHost: true,
         isCurrentTurn: true,
@@ -148,7 +151,7 @@ class MultiplayerService {
   /**
    * Join an existing room by code
    */
-  async joinRoom(roomCode: string, playerName: string, playerColor: string): Promise<{ room: OnlineRoom; player: OnlinePlayer; players: OnlinePlayer[] } | null> {
+  async joinRoom(roomCode: string, playerName: string, playerColor: string, avatar: number = 1): Promise<{ room: OnlineRoom; player: OnlinePlayer; players: OnlinePlayer[] } | null> {
     try {
       // Find room by code
       const { data: roomData, error: roomError } = await supabase
@@ -183,6 +186,7 @@ class MultiplayerService {
           room_id: roomData.id,
           player_name: playerName,
           player_color: playerColor,
+          avatar: avatar,
           is_host: false,
           is_current_turn: false,
           player_order: playerOrder,
@@ -224,6 +228,7 @@ class MultiplayerService {
         roomId: roomData.id,
         playerName: playerName,
         playerColor: playerColor,
+        avatar: avatar,
         position: 1,
         isHost: false,
         isCurrentTurn: false,
@@ -235,6 +240,7 @@ class MultiplayerService {
         roomId: p.room_id,
         playerName: p.player_name,
         playerColor: p.player_color,
+        avatar: p.avatar,
         position: p.position,
         isHost: p.is_host,
         isCurrentTurn: p.is_current_turn,
@@ -658,12 +664,46 @@ class MultiplayerService {
         roomId: p.room_id,
         playerName: p.player_name,
         playerColor: p.player_color,
+        avatar: p.avatar,
         position: p.position,
         isHost: p.is_host,
         isCurrentTurn: p.is_current_turn,
         playerOrder: p.player_order,
       }))
     } catch (error) {
+      return []
+    }
+  }
+
+  /**
+   * Get taken avatars in a room by room code
+   */
+  async getTakenAvatarsInRoom(roomCode: string): Promise<number[]> {
+    try {
+      // First find the room by code
+      const { data: roomData, error: roomError } = await supabase
+        .from('game_rooms')
+        .select('id')
+        .eq('room_code', roomCode.toUpperCase())
+        .single()
+
+      if (roomError || !roomData) {
+        return []
+      }
+
+      // Get all players' avatars in the room
+      const { data: players, error: playersError } = await supabase
+        .from('game_players')
+        .select('avatar')
+        .eq('room_id', roomData.id)
+
+      if (playersError || !players) {
+        return []
+      }
+
+      return players.map((p: any) => p.avatar).filter((a: number) => a != null)
+    } catch (error) {
+      console.error('Error getting taken avatars:', error)
       return []
     }
   }

@@ -308,13 +308,13 @@ export default function DiceRoller({ onRoll, isDisabled = false }: DiceRollerPro
         disabled={isDisabled || isRolling}
       >
         <Text style={[styles.buttonText, isDisabled && styles.buttonTextDisabled]}>
-          {isRolling ? '🎲 Rolling...' : isDisabled ? '⏳ Wait' : '🎲 Roll Dice'}
+          {isRolling ? '🎲 Mengocok...' : isDisabled ? '⏳ Tunggu' : '🎲 Lempar Dadu'}
         </Text>
       </Pressable>
 
       {/* Status text */}
       {isDisabled && !isRolling && (
-        <Text style={styles.statusText}>Not your turn</Text>
+        <Text style={styles.statusText}>Bukan giliranmu</Text>
       )}
 
       {/* Large Result Modal */}
@@ -334,7 +334,7 @@ export default function DiceRoller({ onRoll, isDisabled = false }: DiceRollerPro
               },
             ]}
           >
-            <Text style={styles.resultModalTitle}>You rolled!</Text>
+            <Text style={styles.resultModalTitle}>Kamu dapat!</Text>
             <View style={styles.largeDiceContainer}>
               <DiceFace value={diceResult} size={LARGE_DICE_SIZE} dotSize={LARGE_DOT_SIZE} />
             </View>

@@ -75,6 +75,7 @@ export default function OnlineGameScreen({ navigation, route }: OnlineGameScreen
           roomId: update.data.room_id,
           playerName: update.data.player_name,
           playerColor: update.data.player_color,
+          avatar: update.data.avatar,
           position: update.data.position || 1,
           isHost: update.data.is_host,
           isCurrentTurn: update.data.is_current_turn,
@@ -241,7 +242,7 @@ export default function OnlineGameScreen({ navigation, route }: OnlineGameScreen
   const handleShareRoom = async () => {
     try {
       await Share.share({
-        message: `Join game Snake & Ladder!\nKode Room: ${room.roomCode}\nNama Room: ${room.name}`,
+        message: `Ayo main Ular & Tangga!\nKode Room: ${room.roomCode}\nNama Room: ${room.name}`,
       })
     } catch (error) {
       console.error('Error sharing:', error)
@@ -268,6 +269,7 @@ export default function OnlineGameScreen({ navigation, route }: OnlineGameScreen
     id: p.id,
     name: p.playerName,
     color: p.playerColor,
+    avatar: p.avatar,
     position: p.position,
     isCurrentTurn: p.isCurrentTurn,
     joinedAt: new Date(),

@@ -92,22 +92,22 @@ export default function LeaderboardScreen() {
   const renderHeader = () => (
     <View style={styles.headerRow}>
       <View style={styles.rankCell}>
-        <Text style={styles.headerText}>Rank</Text>
+        <Text style={styles.headerText}>Peringkat</Text>
       </View>
       <View style={styles.nameCell}>
-        <Text style={styles.headerText}>Player</Text>
+        <Text style={styles.headerText}>Pemain</Text>
       </View>
       <View style={styles.statCell}>
-        <Text style={styles.headerText}>Games</Text>
+        <Text style={styles.headerText}>Main</Text>
       </View>
       <View style={styles.statCell}>
-        <Text style={styles.headerText}>Wins</Text>
+        <Text style={styles.headerText}>Menang</Text>
       </View>
       <View style={styles.statCell}>
-        <Text style={styles.headerText}>Losses</Text>
+        <Text style={styles.headerText}>Kalah</Text>
       </View>
       <View style={styles.percentCell}>
-        <Text style={styles.headerText}>Win%</Text>
+        <Text style={styles.headerText}>%Menang</Text>
       </View>
     </View>
   )
@@ -116,7 +116,7 @@ export default function LeaderboardScreen() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#4CAF50" />
-        <Text style={styles.loadingText}>Loading leaderboard...</Text>
+        <Text style={styles.loadingText}>Memuat papan peringkat...</Text>
       </View>
     )
   }
@@ -125,9 +125,9 @@ export default function LeaderboardScreen() {
     <View style={styles.container}>
       {/* Title */}
       <View style={styles.titleContainer}>
-        <Text style={styles.title}>🏆 Leaderboard</Text>
+        <Text style={styles.title}>🏆 Papan Peringkat</Text>
         <Pressable style={styles.refreshButton} onPress={handleRefresh}>
-          <Text style={styles.refreshText}>↻ Refresh</Text>
+          <Text style={styles.refreshText}>↻ Segarkan</Text>
         </Pressable>
       </View>
 
@@ -143,8 +143,8 @@ export default function LeaderboardScreen() {
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No players yet</Text>
-              <Text style={styles.emptySubtext}>Be the first to play!</Text>
+              <Text style={styles.emptyText}>Belum ada pemain</Text>
+              <Text style={styles.emptySubtext}>Jadilah yang pertama bermain!</Text>
             </View>
           }
         />
@@ -153,7 +153,7 @@ export default function LeaderboardScreen() {
       {/* Info */}
       <View style={styles.infoContainer}>
         <Text style={styles.infoText}>
-          Rankings are based on total wins. Play more games to climb the leaderboard!
+          Peringkat berdasarkan total kemenangan. Main lebih banyak untuk naik peringkat!
         </Text>
       </View>
     </View>

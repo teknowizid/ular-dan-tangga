@@ -24,8 +24,8 @@ interface GameStore {
   // Actions
   initializeAuth: (session: any) => void
   setCurrentPlayerId: (playerId: string) => void
-  createGameRoom: (roomName: string, playerName: string, playerColor: string) => void
-  joinGameRoom: (roomId: string, playerName: string, playerColor: string) => void
+  createGameRoom: (roomName: string, playerName: string, playerColor: string, avatar?: number) => void
+  joinGameRoom: (roomId: string, playerName: string, playerColor: string, avatar?: number) => void
   startGame: () => void
   resetGame: () => void
   pauseGame: () => void
@@ -93,12 +93,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   // Create room
-  createGameRoom: (roomName, playerName, playerColor) => {
+  createGameRoom: (roomName, playerName, playerColor, avatar = 1) => {
     const playerId = `player-${Date.now()}`
     const newPlayer: Player = {
       id: playerId,
       name: playerName,
       color: playerColor,
+      avatar: avatar,
       position: 1,
       isCurrentTurn: true,
       joinedAt: new Date(),
@@ -124,13 +125,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   // Join room
-  joinGameRoom: (roomId, playerName, playerColor) => {
+  joinGameRoom: (roomId, playerName, playerColor, avatar = 1) => {
     const state = get()
     const playerId = `player-${Date.now()}`
     const newPlayer: Player = {
       id: playerId,
       name: playerName,
       color: playerColor,
+      avatar: avatar,
       position: 1,
       isCurrentTurn: false,
       joinedAt: new Date(),

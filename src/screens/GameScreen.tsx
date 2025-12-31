@@ -306,7 +306,7 @@ export default function GameScreen({ navigation }: GameScreenProps) {
 
   const handleStartGame = () => {
     if (players.length < 2) {
-      Alert.alert('Need More Players', 'At least 2 players are required to start')
+      Alert.alert('Butuh Lebih Banyak Pemain', 'Minimal 2 pemain untuk memulai')
       return
     }
     playGameStartSound()
@@ -351,7 +351,7 @@ export default function GameScreen({ navigation }: GameScreenProps) {
               ]}
               onPress={handlePauseGame}
             >
-              <Text style={styles.pauseButtonText}>⏸️ Pause</Text>
+              <Text style={styles.pauseButtonText}>⏸️ Jeda</Text>
             </Pressable>
           </View>
         )}
@@ -373,7 +373,7 @@ export default function GameScreen({ navigation }: GameScreenProps) {
           {gameStatus === 'waiting' && (
             <View style={styles.waitingContainer}>
               <Text style={styles.waitingText}>
-                Players: {players.length}/4
+                Pemain: {players.length}/4
               </Text>
               <Pressable
                 style={({ pressed }) => [
@@ -384,7 +384,7 @@ export default function GameScreen({ navigation }: GameScreenProps) {
                 onPress={handleStartGame}
                 disabled={players.length < 2}
               >
-                <Text style={styles.startButtonText}>Start Game</Text>
+                <Text style={styles.startButtonText}>Mulai Game</Text>
               </Pressable>
             </View>
           )}
@@ -397,19 +397,19 @@ export default function GameScreen({ navigation }: GameScreenProps) {
         {/* Move History Preview */}
         {gameStatus === 'playing' && (
           <View style={styles.historyPreview}>
-            <Text style={styles.historyTitle}>📜 Last Move</Text>
+            <Text style={styles.historyTitle}>📜 Langkah Terakhir</Text>
             {lastMove ? (
               <View style={styles.historyContent}>
                 <Text style={styles.historyPlayerName}>{lastMove.playerName}</Text>
                 <Text style={styles.historyText}>
-                  rolled 🎲 {lastMove.diceRoll} → moved from {lastMove.previousPosition} to {lastMove.newPosition}
+                  melempar 🎲 {lastMove.diceRoll} → bergerak dari {lastMove.previousPosition} ke {lastMove.newPosition}
                   {lastMove.moveType === 'snake' && ' 🐍'}
                   {lastMove.moveType === 'ladder' && ' 🪜'}
                   {lastMove.moveType === 'bounce' && ' ↩️'}
                 </Text>
               </View>
             ) : (
-              <Text style={styles.historyText}>No moves yet</Text>
+              <Text style={styles.historyText}>Belum ada langkah</Text>
             )}
           </View>
         )}
@@ -425,23 +425,23 @@ export default function GameScreen({ navigation }: GameScreenProps) {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalEmoji}>🎉</Text>
-            <Text style={styles.modalTitle}>Winner!</Text>
+            <Text style={styles.modalTitle}>Pemenang!</Text>
             <Text style={styles.modalWinner}>{winner?.name}</Text>
-            <Text style={styles.modalSubtitle}>reached position 100!</Text>
+            <Text style={styles.modalSubtitle}>mencapai posisi 100!</Text>
             
             <View style={styles.modalButtons}>
               <Pressable
                 style={[styles.modalButton, styles.playAgainButton]}
                 onPress={handlePlayAgain}
               >
-                <Text style={styles.modalButtonText}>Play Again</Text>
+                <Text style={styles.modalButtonText}>Main Lagi</Text>
               </Pressable>
               <Pressable
                 style={[styles.modalButton, styles.exitButton]}
                 onPress={handleExitGame}
               >
                 <Text style={[styles.modalButtonText, styles.exitButtonText]}>
-                  Exit
+                  Keluar
                 </Text>
               </Pressable>
             </View>
@@ -459,28 +459,28 @@ export default function GameScreen({ navigation }: GameScreenProps) {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalEmoji}>⏸️</Text>
-            <Text style={styles.modalTitle}>Game Paused</Text>
-            <Text style={styles.pauseSubtitle}>Take a break!</Text>
+            <Text style={styles.modalTitle}>Game Dijeda</Text>
+            <Text style={styles.pauseSubtitle}>Istirahat dulu!</Text>
             
             <View style={styles.modalButtons}>
               <Pressable
                 style={[styles.modalButton, styles.resumeButton]}
                 onPress={handleResumeGame}
               >
-                <Text style={styles.modalButtonText}>▶️ Resume</Text>
+                <Text style={styles.modalButtonText}>▶️ Lanjutkan</Text>
               </Pressable>
               <Pressable
                 style={[styles.modalButton, styles.restartButton]}
                 onPress={handlePlayAgain}
               >
-                <Text style={styles.modalButtonText}>🔄 Restart</Text>
+                <Text style={styles.modalButtonText}>🔄 Mulai Ulang</Text>
               </Pressable>
               <Pressable
                 style={[styles.modalButton, styles.quitButton]}
                 onPress={handleQuitGame}
               >
                 <Text style={[styles.modalButtonText, styles.quitButtonText]}>
-                  🚪 Quit Game
+                  🚪 Keluar Game
                 </Text>
               </Pressable>
             </View>
@@ -498,7 +498,7 @@ export default function GameScreen({ navigation }: GameScreenProps) {
         <View style={styles.modalOverlay}>
           <View style={styles.botDiceModalContent}>
             <Text style={styles.botDiceTitle}>🤖 {botName}</Text>
-            <Text style={styles.botDiceSubtitle}>rolled the dice!</Text>
+            <Text style={styles.botDiceSubtitle}>melempar dadu!</Text>
             <View style={styles.botDiceContainer}>
               <DiceFace value={botDiceResult} />
             </View>

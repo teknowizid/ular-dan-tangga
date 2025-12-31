@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   View,
   Text,
@@ -10,8 +10,9 @@ import {
 } from 'react-native'
 import { Audio } from 'expo-av'
 import { useGameStore } from '../store/gameStore'
-import { PLAYER_COLORS } from '../types/game'
-import { playClickSound } from '../utils/soundUtils'
+import { AVATAR_COLORS } from '../types/game'
+import { playClickSound, startBackgroundMusic, stopBackgroundMusic, pauseBackgroundMusic, resumeBackgroundMusic, isBackgroundMusicPlaying } from '../utils/soundUtils'
+import AvatarPicker from '../components/AvatarPicker'
 
 interface HomeScreenProps {
   navigation: any
@@ -23,12 +24,15 @@ interface HomeScreenProps {
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   const [playerName, setPlayerName] = useState('')
   const [roomName, setRoomName] = useState('')
-  const [selectedColor, setSelectedColor] = useState(PLAYER_COLORS[0])
+  const [selectedAvatar, setSelectedAvatar] = useState(1)
   const [isMusicOn, setIsMusicOn] = useState(true)
-  const [isMusicLoaded, setIsMusicLoaded] = useState(false)
-  const soundRef = useRef<Audio.Sound | null>(null)
 
   const { createGameRoom } = useGameStore()
+
+  // Get color based on avatar
+  const getAvatarColor = (avatar: number) => {
+    return AVATAR_COLORS[avatar] || AVATAR_COLORS[1]
+  }
 
   // Configure audio mode and play welcome intro music on mount
   useEffect(() => {
@@ -41,87 +45,74 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           shouldDuckAndroid: true,
         })
 
-        const { sound } = await Audio.Sound.createAsync(
-          require('../../assets/sound/welcome-intro.mp3'),
-          { shouldPlay: true, volume: 0.7, isLooping: true }
-        )
-        soundRef.current = sound
-        setIsMusicLoaded(true)
-        
-        // Try to play (may fail on web due to autoplay policy)
-        await sound.playAsync()
+        // Start background music
+        await startBackgroundMusic()
+        setIsMusicOn(true)
       } catch (error) {
         console.log('Error setting up audio:', error)
-        // Still mark as loaded so user can manually start
-        setIsMusicLoaded(true)
       }
     }
 
     setupAudio()
 
-    // Cleanup on unmount
-    return () => {
-      if (soundRef.current) {
-        soundRef.current.unloadAsync()
-      }
-    }
+    // Cleanup on unmount - don't stop music here, let navigation handle it
+    return () => {}
   }, [])
 
   // Toggle music on/off
   const toggleMusic = async () => {
     playClickSound()
-    if (soundRef.current) {
-      try {
-        const status = await soundRef.current.getStatusAsync()
-        if (status.isLoaded) {
-          if (status.isPlaying) {
-            await soundRef.current.pauseAsync()
-            setIsMusicOn(false)
-          } else {
-            await soundRef.current.playAsync()
-            setIsMusicOn(true)
-          }
-        }
-      } catch (error) {
-        console.log('Error toggling music:', error)
-      }
+    const isPlaying = await isBackgroundMusicPlaying()
+    if (isPlaying) {
+      await pauseBackgroundMusic()
+      setIsMusicOn(false)
+    } else {
+      await resumeBackgroundMusic()
+      setIsMusicOn(true)
     }
   }
 
-  const handleCreateGame = () => {
+  const handleCreateGame = async () => {
     playClickSound()
     if (!playerName.trim()) {
-      Alert.alert('Error', 'Please enter your name')
+      Alert.alert('Error', 'Masukkan nama kamu')
       return
     }
     if (!roomName.trim()) {
-      Alert.alert('Error', 'Please enter a room name')
+      Alert.alert('Error', 'Masukkan nama room')
       return
     }
 
-    createGameRoom(roomName.trim(), playerName.trim(), selectedColor)
+    // Stop background music before entering game
+    await stopBackgroundMusic()
+    
+    createGameRoom(roomName.trim(), playerName.trim(), getAvatarColor(selectedAvatar), selectedAvatar)
     navigation.navigate('Game')
   }
 
-  const handleQuickPlay = () => {
+  const handleQuickPlay = async () => {
     playClickSound()
     if (!playerName.trim()) {
-      Alert.alert('Error', 'Please enter your name')
+      Alert.alert('Error', 'Masukkan nama kamu')
       return
     }
 
+    // Stop background music before entering game
+    await stopBackgroundMusic()
+
     // Create a quick game with default room name
-    createGameRoom(`Game-${Date.now().toString(36)}`, playerName.trim(), selectedColor)
+    createGameRoom(`Game-${Date.now().toString(36)}`, playerName.trim(), getAvatarColor(selectedAvatar), selectedAvatar)
     navigation.navigate('Game')
   }
 
-  const handleColorSelect = (color: string) => {
+  const handleNavigate = async (screen: string) => {
     playClickSound()
-    setSelectedColor(color)
-  }
-
-  const handleNavigate = (screen: string) => {
-    playClickSound()
+    
+    // Stop music if going to Lobby (will enter game from there)
+    if (screen === 'Lobby') {
+      await stopBackgroundMusic()
+    }
+    
     navigation.navigate(screen)
   }
 
@@ -140,47 +131,38 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             </Text>
           </Pressable>
         </View>
-        <Text style={styles.title}>🐍 Snake & Ladder 🪜</Text>
-        <Text style={styles.subtitle}>Multiplayer Board Game</Text>
+        <Text style={styles.title}>🐍 Ular & Tangga 🪜</Text>
+        <Text style={styles.subtitle}>Permainan Papan Multiplayer</Text>
       </View>
 
       {/* Player Setup */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Player Setup</Text>
+        <Text style={styles.cardTitle}>Pengaturan Pemain</Text>
         
-        <Text style={styles.label}>Your Name</Text>
+        <Text style={styles.label}>Nama Kamu</Text>
         <TextInput
           style={styles.input}
-          placeholder="Enter your name"
+          placeholder="Masukkan nama kamu"
           value={playerName}
           onChangeText={setPlayerName}
           maxLength={20}
         />
 
-        <Text style={styles.label}>Choose Color</Text>
-        <View style={styles.colorPicker}>
-          {PLAYER_COLORS.map((color) => (
-            <Pressable
-              key={color}
-              style={[
-                styles.colorOption,
-                { backgroundColor: color },
-                selectedColor === color && styles.colorSelected,
-              ]}
-              onPress={() => handleColorSelect(color)}
-            />
-          ))}
-        </View>
+        <AvatarPicker
+          selectedAvatar={selectedAvatar}
+          onSelect={setSelectedAvatar}
+          size="medium"
+        />
       </View>
 
       {/* Create Game */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Create New Game</Text>
+        <Text style={styles.cardTitle}>Buat Game Baru</Text>
         
-        <Text style={styles.label}>Room Name</Text>
+        <Text style={styles.label}>Nama Room</Text>
         <TextInput
           style={styles.input}
-          placeholder="Enter room name"
+          placeholder="Masukkan nama room"
           value={roomName}
           onChangeText={setRoomName}
           maxLength={30}
@@ -194,13 +176,13 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           ]}
           onPress={handleCreateGame}
         >
-          <Text style={styles.buttonText}>Create Game Room</Text>
+          <Text style={styles.buttonText}>Buat Room Game</Text>
         </Pressable>
       </View>
 
       {/* Quick Play */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Quick Play</Text>
+        <Text style={styles.cardTitle}>Main Cepat</Text>
         <Text style={styles.cardDescription}>
           Main cepat melawan Bot
         </Text>
@@ -242,12 +224,12 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
       {/* Game Rules */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>How to Play</Text>
+        <Text style={styles.cardTitle}>Cara Bermain</Text>
         <View style={styles.rulesList}>
-          <Text style={styles.rule}>🎲 Roll the dice to move forward</Text>
-          <Text style={styles.rule}>🪜 Land on ladder bottom to climb up</Text>
-          <Text style={styles.rule}>🐍 Land on snake head to slide down</Text>
-          <Text style={styles.rule}>🏆 First to reach 100 wins!</Text>
+          <Text style={styles.rule}>🎲 Lempar dadu untuk maju</Text>
+          <Text style={styles.rule}>🪜 Mendarat di bawah tangga untuk naik</Text>
+          <Text style={styles.rule}>🐍 Mendarat di kepala ular untuk turun</Text>
+          <Text style={styles.rule}>🏆 Yang pertama sampai 100 menang!</Text>
         </View>
       </View>
 
@@ -257,7 +239,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           style={styles.leaderboardButton}
           onPress={() => handleNavigate('Leaderboard')}
         >
-          <Text style={styles.leaderboardText}>🏆 View Leaderboard</Text>
+          <Text style={styles.leaderboardText}>🏆 Lihat Papan Peringkat</Text>
         </Pressable>
       </View>
     </ScrollView>
@@ -349,23 +331,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0e0e0',
     marginBottom: 16,
-  },
-  colorPicker: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 8,
-  },
-  colorOption: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 3,
-    borderColor: 'transparent',
-  },
-  colorSelected: {
-    borderColor: '#333',
-    transform: [{ scale: 1.1 }],
   },
   button: {
     borderRadius: 12,

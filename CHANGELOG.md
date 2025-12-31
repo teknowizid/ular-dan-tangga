@@ -5,6 +5,71 @@ Semua perubahan penting pada project ini akan didokumentasikan di file ini.
 Format berdasarkan [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 dan project ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2024-12-31
+
+### 🇮🇩 Indonesian Language Update
+
+### Changed
+
+#### Localization - Bahasa Indonesia
+- ✅ 🏠 HomeScreen: Judul, subtitle, label input, tombol, aturan permainan
+- ✅ 🎮 GameScreen: Tombol pause, modal pemenang, modal jeda, modal dadu bot, riwayat langkah
+- ✅ 🏆 LeaderboardScreen: Judul, header tabel, pesan kosong, info
+- ✅ 🌐 LobbyScreen: Judul setup pemain
+- ✅ 🎲 OnlineGameScreen: Pesan share room
+- ✅ 🎯 DiceRoller: Tombol lempar dadu, status tunggu
+- ✅ 👥 TurnIndicator: Status giliran, label pemain
+
+### Technical
+- Updated semua screen dan component dengan teks Bahasa Indonesia
+- Konsistensi bahasa di seluruh aplikasi
+
+---
+
+## [1.2.0] - 2024-12-31
+
+### 🎭 Player Avatar & Session Tracking Update
+
+### Added
+
+#### Player Avatars
+- ✅ 🎭 Avatar picker component untuk memilih avatar pemain
+- ✅ 🖼️ 6 avatar tersedia dari folder assets/avatars/
+- ✅ 👤 Avatar ditampilkan di PlayerToken (menggantikan inisial)
+- ✅ 🎮 Avatar support untuk local game dan multiplayer online
+- ✅ 💾 Avatar disimpan di database untuk multiplayer
+- ✅ 🚫 Avatar yang sudah dipilih tidak bisa dipilih pemain lain (multiplayer)
+- ✅ 🎨 Warna otomatis berdasarkan avatar (tidak perlu pilih warna manual)
+
+#### Session Tracking
+- ✅ 💓 Heartbeat system untuk track player aktif (setiap 30 detik)
+- ✅ 🕐 Kolom `last_active` di game_players
+- ✅ 🕐 Kolom `last_activity` di game_rooms
+- ✅ 🧹 Auto-cleanup stale players (inactive > 2 menit)
+- ✅ 🗑️ Auto-cleanup empty rooms
+- ✅ 🗑️ Auto-cleanup waiting rooms tanpa aktivitas > 10 menit
+
+#### Bounce Back Rule
+- ✅ 🔄 Jika dadu melebihi 100, pemain bounce back
+- ✅ 📍 Contoh: posisi 97 + dadu 5 = 102 → bounce ke 98
+- ✅ 🎯 Harus tepat di 100 untuk menang
+- ✅ 🎨 Modal bounce dengan animasi shake
+
+### Changed
+- Hapus pilihan warna manual (warna otomatis dari avatar)
+- UI lebih simpel tanpa color picker
+
+### Technical
+- Added `migration-v3.sql` untuk session tracking columns
+- Added `migration-v4.sql` untuk avatar column
+- Added `AVATAR_COLORS` constant untuk mapping avatar ke warna
+- Added `getTakenAvatarsInRoom()` untuk cek avatar yang sudah dipakai
+- Updated `multiplayerService.ts` dengan heartbeat system
+- Updated `boardLogic.ts` dengan bounce back logic
+- Added `force-cleanup.js` untuk cleanup paksa semua room
+
+---
+
 ## [1.1.0] - 2024-12-31
 
 ### 🎵 Sound Effects & Audio Update
@@ -136,7 +201,6 @@ Rilis pertama Snake & Ladder Game dengan fitur lengkap untuk single player dan m
 ### Planned Features
 - [ ] Custom board themes
 - [ ] Achievement system
-- [ ] Player avatars
 - [ ] Chat dalam game
 - [ ] Spectator mode
 - [ ] Tournament mode
@@ -149,6 +213,8 @@ Rilis pertama Snake & Ladder Game dengan fitur lengkap untuk single player dan m
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 1.3.0 | 2024-12-31 | Indonesian language localization |
+| 1.2.0 | 2024-12-31 | Player avatars, session tracking, bounce back rule |
 | 1.1.0 | 2024-12-31 | Sound effects, multiplayer online, responsive UI |
 | 1.0.0 | 2024-12-31 | Initial release dengan semua fitur core |
 

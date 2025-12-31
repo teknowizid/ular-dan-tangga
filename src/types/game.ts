@@ -5,6 +5,7 @@ export interface Player {
   id: string
   name: string
   color: string
+  avatar?: number // Avatar index (1-6)
   position: number
   isCurrentTurn: boolean
   diceResult?: number
@@ -127,7 +128,7 @@ export const STANDARD_BOARD: GameBoard = {
 }
 
 /**
- * Available player colors for selection
+ * Available player colors for selection (legacy, kept for compatibility)
  */
 export const PLAYER_COLORS = [
   '#FF6B6B', // Red
@@ -139,3 +140,38 @@ export const PLAYER_COLORS = [
   '#FF8C00', // Orange
   '#9370DB', // Purple
 ]
+
+/**
+ * Avatar colors - each avatar has a unique color
+ */
+export const AVATAR_COLORS: Record<number, string> = {
+  1: '#4ECDC4', // Teal - Bus
+  2: '#FF6B6B', // Red - Fire truck
+  3: '#45B7D1', // Blue - Police car
+  4: '#FF8C00', // Orange - Taxi
+  5: '#96CEB4', // Green - Ambulance
+  6: '#9370DB', // Purple - Truck
+}
+
+/**
+ * Available player avatars
+ * Maps avatar index to require() for the image
+ */
+export const PLAYER_AVATARS: Record<number, any> = {
+  1: require('../../assets/avatars/1.png'),
+  2: require('../../assets/avatars/2.png'),
+  3: require('../../assets/avatars/3.png'),
+  4: require('../../assets/avatars/4.png'),
+  5: require('../../assets/avatars/5.png'),
+  6: require('../../assets/avatars/2025-12-31_191901.png'),
+}
+
+/**
+ * Get avatar source by index
+ */
+export const getAvatarSource = (avatarIndex: number | undefined): any => {
+  if (!avatarIndex || !PLAYER_AVATARS[avatarIndex]) {
+    return PLAYER_AVATARS[1] // Default avatar
+  }
+  return PLAYER_AVATARS[avatarIndex]
+}
