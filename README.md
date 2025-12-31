@@ -52,6 +52,21 @@ eas build --platform android --profile preview
 
 ---
 
+## 🌐 Deploy to Web (Vercel)
+
+Deploy aplikasi sebagai web app di Vercel:
+👉 **[Vercel Deploy Guide](docs/vercel-deploy-guide.md)**
+
+**Quick Deploy:**
+1. Push code ke GitHub
+2. Import project di [vercel.com](https://vercel.com)
+3. Set environment variables
+4. Deploy!
+
+**Live Demo:** Coming soon...
+
+---
+
 ## 🚀 Quick Start
 
 ### Prerequisites
