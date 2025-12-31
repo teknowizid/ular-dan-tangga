@@ -25,25 +25,39 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const [roomName, setRoomName] = useState('')
   const [selectedColor, setSelectedColor] = useState(PLAYER_COLORS[0])
   const [isMusicOn, setIsMusicOn] = useState(true)
+  const [isMusicLoaded, setIsMusicLoaded] = useState(false)
   const soundRef = useRef<Audio.Sound | null>(null)
 
   const { createGameRoom } = useGameStore()
 
-  // Play welcome intro music on mount
+  // Configure audio mode and play welcome intro music on mount
   useEffect(() => {
-    const playWelcomeMusic = async () => {
+    const setupAudio = async () => {
       try {
+        // Set audio mode for background playback
+        await Audio.setAudioModeAsync({
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: false,
+          shouldDuckAndroid: true,
+        })
+
         const { sound } = await Audio.Sound.createAsync(
           require('../../assets/sound/welcome-intro.mp3'),
           { shouldPlay: true, volume: 0.7, isLooping: true }
         )
         soundRef.current = sound
+        setIsMusicLoaded(true)
+        
+        // Try to play (may fail on web due to autoplay policy)
+        await sound.playAsync()
       } catch (error) {
-        console.log('Error playing welcome music:', error)
+        console.log('Error setting up audio:', error)
+        // Still mark as loaded so user can manually start
+        setIsMusicLoaded(true)
       }
     }
 
-    playWelcomeMusic()
+    setupAudio()
 
     // Cleanup on unmount
     return () => {
@@ -57,12 +71,20 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const toggleMusic = async () => {
     playClickSound()
     if (soundRef.current) {
-      if (isMusicOn) {
-        await soundRef.current.pauseAsync()
-      } else {
-        await soundRef.current.playAsync()
+      try {
+        const status = await soundRef.current.getStatusAsync()
+        if (status.isLoaded) {
+          if (status.isPlaying) {
+            await soundRef.current.pauseAsync()
+            setIsMusicOn(false)
+          } else {
+            await soundRef.current.playAsync()
+            setIsMusicOn(true)
+          }
+        }
+      } catch (error) {
+        console.log('Error toggling music:', error)
       }
-      setIsMusicOn(!isMusicOn)
     }
   }
 
