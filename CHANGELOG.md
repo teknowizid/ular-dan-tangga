@@ -35,6 +35,52 @@ dan project ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ---
 
+## [1.4.0] - 2024-12-31
+
+### 🎲 Bonus Roll & Collision Update
+
+### Added
+
+#### Bonus Roll 6
+- ✅ 🎲 Jika pemain lempar dadu dapat angka 6, berhak lempar dadu 1x lagi
+- ✅ 🎯 Pemain bisa main 2x berturut-turut dengan bonus roll
+- ✅ 🏷️ Badge indikator "🎲 BONUS!" di header saat pemain punya bonus roll
+- ✅ 🎮 Bonus roll berlaku untuk mode lokal dan online
+
+#### Collision/Tabrakan
+- ✅ 💥 Jika pemain mendarat di kotak yang ditempati pemain lain, pemain lain mundur 2 kotak
+- ✅ 🎨 Modal tabrakan dengan background ungu dan animasi shake
+- ✅ 📢 Notifikasi "Player X menabrak Player Y! Player Y mundur 2 kotak"
+- ✅ 🎮 Collision berlaku untuk mode lokal dan online
+
+#### Leaderboard & Stats
+- ✅ 📊 Tabel `player_stats` untuk tracking statistik pemain
+- ✅ 🏆 View `leaderboard` untuk ranking pemain
+- ✅ 💾 Auto-save stats saat game selesai (mode lokal)
+- ✅ 📈 Tracking: total games, wins, losses, average moves
+- ✅ 🎯 Leaderboard screen fetch data real dari Supabase
+
+#### UI Improvements
+- ✅ 🏠 Tombol "Kembali" di winner modal untuk exit ke home
+- ✅ 🔄 Tombol "Main Lagi" di winner modal untuk restart game
+
+### Changed
+- Mode Lokal (vs Bot) sekarang save stats ke database (exclude bot)
+- Winner modal sekarang ada 2 tombol: Main Lagi & Kembali
+
+### Technical
+- Added `hasBonusRoll` state di gameStore
+- Added `lastCollision` state di gameStore
+- Added `checkCollision()` function di boardLogic
+- Added `applyCollision()` action di gameStore
+- Added collision modal type di GameEventModal
+- Added `player_stats` table dan `leaderboard` view
+- Added `update_player_stats()` function di database
+- Added `updatePlayerStatsSimple()` di databaseService
+- Migration files renamed dengan nomor urut dan nama deskriptif
+
+---
+
 ## [1.3.0] - 2024-12-31
 
 ### 🇮🇩 Indonesian Language Update
