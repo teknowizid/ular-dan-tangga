@@ -303,7 +303,7 @@ export class DatabaseService {
         return []
       }
 
-      return data.map((entry) => ({
+      return data.map((entry: any, index: number) => ({
         id: entry.id,
         username: entry.username,
         avatarUrl: entry.avatar_url,
@@ -311,11 +311,38 @@ export class DatabaseService {
         totalGamesWon: entry.total_games_won || 0,
         totalGamesLost: entry.total_games_lost || 0,
         winPercentage: entry.win_percentage || 0,
-        rank: entry.rank,
+        rank: entry.rank || index + 1,
       }))
     } catch (error) {
       console.error('Error getting leaderboard:', error)
       return []
+    }
+  }
+
+  /**
+   * Update player statistics after a game (simplified version)
+   */
+  async updatePlayerStatsSimple(
+    playerName: string,
+    won: boolean,
+    totalMoves: number
+  ): Promise<boolean> {
+    try {
+      const { error } = await supabase.rpc('update_player_stats', {
+        p_player_name: playerName,
+        p_won: won,
+        p_moves: totalMoves
+      })
+
+      if (error) {
+        console.error('Error updating player stats:', error)
+        return false
+      }
+
+      return true
+    } catch (error) {
+      console.error('Error updating player stats:', error)
+      return false
     }
   }
 

@@ -15,6 +15,7 @@ import GameEventModal from '../components/GameEventModal'
 import { checkWin } from '../utils/boardLogic'
 import { playGameStartSound } from '../utils/soundUtils'
 import { CollisionEvent } from '../types/game'
+import { databaseService } from '../services/databaseService'
 
 // Dot patterns for dice face
 const DOT_PATTERNS: { [key: number]: { top: number; left: number }[] } = {
@@ -132,6 +133,19 @@ export default function GameScreen({ navigation }: GameScreenProps) {
     if (gameStatus === 'finished' && winner) {
       setWinnerName(winner.name)
       setShowWinnerModal(true)
+      
+      // Save stats to database for all players
+      const saveStats = async () => {
+        for (const player of players) {
+          // Skip bot players
+          if (player.id.startsWith('bot-')) continue
+          
+          const won = player.id === winner.id
+          const playerMoves = moveHistory.filter(m => m.playerId === player.id).length
+          await databaseService.updatePlayerStatsSimple(player.name, won, playerMoves)
+        }
+      }
+      saveStats()
     }
   }, [gameStatus, winner])
 

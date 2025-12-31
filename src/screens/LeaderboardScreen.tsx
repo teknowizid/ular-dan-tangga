@@ -8,15 +8,7 @@ import {
   Pressable,
 } from 'react-native'
 import { LeaderboardEntry } from '../types/game'
-
-// Mock data for demonstration (replace with databaseService.getLeaderboard() when connected)
-const MOCK_LEADERBOARD: LeaderboardEntry[] = [
-  { id: '1', username: 'Champion', totalGamesPlayed: 50, totalGamesWon: 35, totalGamesLost: 15, winPercentage: 70, rank: 1 },
-  { id: '2', username: 'ProPlayer', totalGamesPlayed: 45, totalGamesWon: 28, totalGamesLost: 17, winPercentage: 62, rank: 2 },
-  { id: '3', username: 'GameMaster', totalGamesPlayed: 60, totalGamesWon: 32, totalGamesLost: 28, winPercentage: 53, rank: 3 },
-  { id: '4', username: 'LuckyDice', totalGamesPlayed: 30, totalGamesWon: 15, totalGamesLost: 15, winPercentage: 50, rank: 4 },
-  { id: '5', username: 'Newbie', totalGamesPlayed: 10, totalGamesWon: 3, totalGamesLost: 7, winPercentage: 30, rank: 5 },
-]
+import { databaseService } from '../services/databaseService'
 
 /**
  * LeaderboardScreen - Displays player rankings and statistics
@@ -28,10 +20,8 @@ export default function LeaderboardScreen() {
 
   const fetchLeaderboard = async () => {
     try {
-      // TODO: Replace with actual database call
-      // const data = await databaseService.getLeaderboard()
-      await new Promise((resolve) => setTimeout(resolve, 500)) // Simulate network delay
-      setLeaderboard(MOCK_LEADERBOARD)
+      const data = await databaseService.getLeaderboard()
+      setLeaderboard(data)
     } catch (error) {
       console.error('Error fetching leaderboard:', error)
     } finally {
