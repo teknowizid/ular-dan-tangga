@@ -11,6 +11,7 @@ import {
 import { Audio } from 'expo-av'
 import { useGameStore } from '../store/gameStore'
 import { PLAYER_COLORS } from '../types/game'
+import { playClickSound } from '../utils/soundUtils'
 
 interface HomeScreenProps {
   navigation: any
@@ -54,6 +55,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
   // Toggle music on/off
   const toggleMusic = async () => {
+    playClickSound()
     if (soundRef.current) {
       if (isMusicOn) {
         await soundRef.current.pauseAsync()
@@ -65,6 +67,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   }
 
   const handleCreateGame = () => {
+    playClickSound()
     if (!playerName.trim()) {
       Alert.alert('Error', 'Please enter your name')
       return
@@ -79,6 +82,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   }
 
   const handleQuickPlay = () => {
+    playClickSound()
     if (!playerName.trim()) {
       Alert.alert('Error', 'Please enter your name')
       return
@@ -87,6 +91,16 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     // Create a quick game with default room name
     createGameRoom(`Game-${Date.now().toString(36)}`, playerName.trim(), selectedColor)
     navigation.navigate('Game')
+  }
+
+  const handleColorSelect = (color: string) => {
+    playClickSound()
+    setSelectedColor(color)
+  }
+
+  const handleNavigate = (screen: string) => {
+    playClickSound()
+    navigation.navigate(screen)
   }
 
   return (
@@ -131,7 +145,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                 { backgroundColor: color },
                 selectedColor === color && styles.colorSelected,
               ]}
-              onPress={() => setSelectedColor(color)}
+              onPress={() => handleColorSelect(color)}
             />
           ))}
         </View>
@@ -196,7 +210,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             styles.onlineButton,
             pressed && styles.buttonPressed,
           ]}
-          onPress={() => navigation.navigate('Lobby')}
+          onPress={() => handleNavigate('Lobby')}
         >
           <Text style={styles.buttonText}>
             🎮 Masuk Lobby
@@ -219,7 +233,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       <View style={styles.footer}>
         <Pressable
           style={styles.leaderboardButton}
-          onPress={() => navigation.navigate('Leaderboard')}
+          onPress={() => handleNavigate('Leaderboard')}
         >
           <Text style={styles.leaderboardText}>🏆 View Leaderboard</Text>
         </Pressable>
