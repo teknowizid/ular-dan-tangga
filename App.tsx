@@ -37,7 +37,7 @@ function CustomSplashScreen({ onFinish }: { onFinish: () => void }) {
       <Image
         source={require('./assets/splash.png')}
         style={styles.splashImage}
-        resizeMode="contain"
+        resizeMode="cover"
       />
     </Animated.View>
   )
@@ -97,7 +97,7 @@ export default function App() {
 const styles = StyleSheet.create({
   splashContainer: {
     flex: 1,
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
   },
