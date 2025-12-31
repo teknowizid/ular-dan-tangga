@@ -9,14 +9,29 @@ Game ular tangga klasik yang dibangun dengan React Native + Expo. Mainkan melawa
 
 ## ✨ Fitur
 
-- 🎮 **Single Player vs Bot** - Main melawan AI bot
-- 🌐 **Multiplayer Real-time** - Main dengan teman via Supabase (opsional)
-- 🎲 **Dadu 3D Animasi** - Efek rolling realistis dengan bounce animation
-- 🐍 **Ular & Tangga Visual** - SVG drawings untuk ular dan tangga
-- 📱 **Cross-platform** - Web, iOS, dan Android
-- ⏸️ **Pause Game** - Pause, resume, atau restart kapan saja
-- 📜 **Move History** - Lihat riwayat langkah terakhir
-- 🏆 **Leaderboard** - Papan peringkat pemain (dengan Supabase)
+### 🎮 Game Modes
+- **Single Player vs Bot** - Main melawan AI bot
+- **Multiplayer Online** - Main dengan teman via room code
+
+### 🎵 Sound Effects
+- 🎵 Welcome intro music (dengan toggle on/off)
+- 🖱️ Click sound untuk semua tombol
+- 🎲 Dice roll sound effect
+- 🚶 Move player sound effect
+- 🎮 Game start sound effect
+
+### 🎨 Visual & Animation
+- 🎲 Dadu 3D dengan animasi rolling realistis
+- 🐍 SVG drawings untuk ular berwarna-warni
+- 🪜 SVG drawings untuk tangga
+- 📱 Responsive layout untuk mobile browser
+- ⏸️ Pause, resume, atau restart kapan saja
+
+### 🌐 Multiplayer Features
+- 🔑 Room code system untuk invite teman
+- 👥 Real-time sync via Supabase
+- 🗑️ Auto-cleanup room setelah game selesai
+- 📤 Share room code functionality
 
 ## 🚀 Quick Start
 
@@ -55,13 +70,22 @@ npx expo start --android
 
 ## 🎯 Cara Bermain
 
-1. **Start Game** - Klik "Start Game" di home screen
+1. **Start Game** - Pilih "Main vs Bot" atau "Masuk Lobby" untuk multiplayer
 2. **Roll Dice** - Klik tombol "🎲 Roll Dice" untuk mengocok dadu
 3. **Move Token** - Token akan bergerak otomatis sesuai hasil dadu
 4. **Snake & Ladder**:
    - 🐍 Kena kepala ular = turun ke ekor
    - 🪜 Kena bawah tangga = naik ke atas
 5. **Win** - Pemain pertama yang sampai kotak 100 menang!
+
+## 🎵 Sound Files
+
+Letakkan file audio di folder `assets/sound/`:
+- `welcome-intro.mp3` - Background music di home
+- `click.mp3` - Button click sound
+- `dice-roll.mp3` - Dice rolling sound
+- `move-player.mp3` - Token movement sound
+- `game-start.mp3` - Game start sound
 
 ## 🏗️ Project Structure
 
@@ -76,24 +100,36 @@ SnakeLadderGame/
 │   │   ├── LadderDrawing.tsx # SVG tangga
 │   │   └── TurnIndicator.tsx # Indikator giliran
 │   ├── screens/          # App Screens
-│   │   ├── HomeScreen.tsx
-│   │   ├── GameScreen.tsx
+│   │   ├── HomeScreen.tsx      # Home dengan music toggle
+│   │   ├── GameScreen.tsx      # Single player game
+│   │   ├── LobbyScreen.tsx     # Multiplayer lobby
+│   │   ├── OnlineGameScreen.tsx # Online multiplayer game
 │   │   └── LeaderboardScreen.tsx
 │   ├── store/            # State Management (Zustand)
 │   │   └── gameStore.ts
 │   ├── services/         # Backend Services
+│   │   ├── multiplayerService.ts # Room & player management
 │   │   ├── realtimeService.ts
 │   │   └── databaseService.ts
 │   ├── utils/            # Utility Functions
-│   │   └── boardLogic.ts
+│   │   ├── boardLogic.ts
+│   │   └── soundUtils.ts     # Sound effect helpers
 │   ├── types/            # TypeScript Types
 │   │   └── game.ts
 │   ├── config/           # Configuration
 │   │   └── supabase.ts
 │   └── navigation/       # Navigation
 │       └── GameNavigator.tsx
+├── assets/
+│   └── sound/            # Audio files
+│       ├── welcome-intro.mp3
+│       ├── click.mp3
+│       ├── dice-roll.mp3
+│       ├── move-player.mp3
+│       └── game-start.mp3
 ├── supabase/             # Database Schema
 │   ├── schema.sql
+│   ├── migration-v2.sql
 │   └── rls-policies.sql
 ├── docs/                 # Documentation
 │   └── supabase-setup.md
@@ -113,7 +149,7 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 
 ### Supabase Setup (Optional)
 
-Untuk fitur multiplayer dan leaderboard, ikuti panduan di `docs/supabase-setup.md`.
+Untuk fitur multiplayer online, ikuti panduan di `docs/supabase-setup.md`.
 
 ## 🎨 Game Board
 
@@ -157,6 +193,7 @@ Board menggunakan layout snake pattern klasik:
 - **Backend**: Supabase (PostgreSQL + Realtime)
 - **Navigation**: React Navigation
 - **Graphics**: react-native-svg
+- **Audio**: expo-av
 
 ## 📝 Scripts
 
@@ -175,9 +212,6 @@ npm run android
 
 # Type check
 npx tsc --noEmit
-
-# Lint
-npm run lint
 ```
 
 ## 🤝 Contributing

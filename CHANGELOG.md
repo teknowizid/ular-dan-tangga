@@ -5,6 +5,48 @@ Semua perubahan penting pada project ini akan didokumentasikan di file ini.
 Format berdasarkan [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 dan project ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2024-12-31
+
+### 🎵 Sound Effects & Audio Update
+
+### Added
+
+#### Sound Effects
+- ✅ 🎵 Welcome intro music saat buka halaman Home (looping)
+- ✅ 🔊 Tombol toggle musik on/off di header
+- ✅ 🖱️ Click sound effect untuk semua tombol
+- ✅ 🎲 Dice roll sound effect saat mengocok dadu
+- ✅ 🚶 Move player sound effect saat pion bergerak
+- ✅ 🎮 Game start sound effect saat game dimulai
+
+#### Multiplayer Online
+- ✅ 🌐 Lobby screen untuk create/join room
+- ✅ 🔑 Room code system (6 karakter) untuk share ke teman
+- ✅ 👥 Real-time player sync via Supabase channels
+- ✅ 🎮 Online game screen dengan responsive layout
+- ✅ 📤 Share room code functionality
+
+#### Room Management
+- ✅ 🗑️ Auto-delete room saat game selesai (5 detik delay)
+- ✅ 🗑️ Auto-delete room saat semua pemain keluar
+- ✅ 🧹 Cleanup finished/empty rooms saat load lobby
+
+#### UI Improvements
+- ✅ 📱 Responsive layout untuk mobile browser
+- ✅ 📐 Board size auto-adjust berdasarkan screen height
+- ✅ 🎯 Fixed dice section di bottom (tidak perlu scroll)
+
+### Changed
+- Improved audio mode configuration untuk better playback
+- Toggle music sekarang cek status sebelum play/pause
+
+### Technical
+- Added `expo-av` untuk audio playback
+- Created `soundUtils.ts` untuk reusable sound functions
+- Added `cleanupFinishedRooms()` di multiplayerService
+
+---
+
 ## [1.0.0] - 2024-12-31
 
 ### 🎉 Initial Release
@@ -68,10 +110,10 @@ Rilis pertama Snake & Ladder Game dengan fitur lengkap untuk single player dan m
 - ✅ Leaderboard Screen
 
 #### Backend Integration (Supabase)
-- ✅ Database schema untuk users, game_rooms, game_players, move_history, player_stats
+- ✅ Database schema untuk game_rooms, game_players, move_history
 - ✅ Row Level Security policies
 - ✅ Realtime subscription untuk multiplayer
-- ✅ Leaderboard view
+- ✅ Anonymous multiplayer (no auth required)
 
 #### Documentation
 - ✅ Panduan setup Supabase lengkap
@@ -83,6 +125,7 @@ Rilis pertama Snake & Ladder Game dengan fitur lengkap untuk single player dan m
 - TypeScript
 - Zustand (state management)
 - react-native-svg (graphics)
+- expo-av (audio)
 - @supabase/supabase-js (backend)
 - @react-navigation/native (navigation)
 
@@ -91,14 +134,14 @@ Rilis pertama Snake & Ladder Game dengan fitur lengkap untuk single player dan m
 ## [Unreleased]
 
 ### Planned Features
-- [ ] Sound effects untuk dice roll dan movement
-- [ ] Multiplayer matchmaking
 - [ ] Custom board themes
 - [ ] Achievement system
 - [ ] Player avatars
 - [ ] Chat dalam game
 - [ ] Spectator mode
 - [ ] Tournament mode
+- [ ] Win/lose sound effects
+- [ ] Snake/ladder special sound effects
 
 ---
 
@@ -106,6 +149,7 @@ Rilis pertama Snake & Ladder Game dengan fitur lengkap untuk single player dan m
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 1.1.0 | 2024-12-31 | Sound effects, multiplayer online, responsive UI |
 | 1.0.0 | 2024-12-31 | Initial release dengan semua fitur core |
 
 ---
