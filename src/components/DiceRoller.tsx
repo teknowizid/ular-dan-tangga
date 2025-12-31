@@ -1,5 +1,6 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { View, Text, Pressable, StyleSheet, Animated, Platform, Modal } from 'react-native'
+import { Audio } from 'expo-av'
 
 interface DiceRollerProps {
   onRoll: (result: number) => void
@@ -66,6 +67,7 @@ export default function DiceRoller({ onRoll, isDisabled = false }: DiceRollerPro
   const [showResult, setShowResult] = useState(false)
   const [displayValue, setDisplayValue] = useState<number>(1)
   const [showResultModal, setShowResultModal] = useState(false)
+  const [sound, setSound] = useState<Audio.Sound | null>(null)
   
   const rotateXAnim = useRef(new Animated.Value(0)).current
   const rotateYAnim = useRef(new Animated.Value(0)).current
@@ -74,8 +76,34 @@ export default function DiceRoller({ onRoll, isDisabled = false }: DiceRollerPro
   const resultScaleAnim = useRef(new Animated.Value(0)).current
   const resultOpacityAnim = useRef(new Animated.Value(0)).current
 
+  // Load sound on mount
+  useEffect(() => {
+    return () => {
+      // Cleanup sound on unmount
+      if (sound) {
+        sound.unloadAsync()
+      }
+    }
+  }, [sound])
+
+  // Play dice roll sound
+  const playDiceSound = async () => {
+    try {
+      const { sound: newSound } = await Audio.Sound.createAsync(
+        require('../../assets/sound/dice-roll.mp3')
+      )
+      setSound(newSound)
+      await newSound.playAsync()
+    } catch (error) {
+      console.log('Error playing sound:', error)
+    }
+  }
+
   const handleRoll = () => {
     if (isRolling || isDisabled) return
+
+    // Play dice roll sound
+    playDiceSound()
 
     setIsRolling(true)
     setShowResult(false)

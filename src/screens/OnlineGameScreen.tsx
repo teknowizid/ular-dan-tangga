@@ -6,12 +6,12 @@ import {
   StyleSheet,
   Alert,
   Modal,
-  ScrollView,
   Share,
+  Dimensions,
+  useWindowDimensions,
 } from 'react-native'
 import GameBoard from '../components/GameBoard'
 import DiceRoller from '../components/DiceRoller'
-import TurnIndicator from '../components/TurnIndicator'
 import { multiplayerService, OnlineRoom, OnlinePlayer, GameUpdate } from '../services/multiplayerService'
 import { calculateNewPosition, checkWin } from '../utils/boardLogic'
 import { STANDARD_BOARD, Player } from '../types/game'
@@ -30,6 +30,7 @@ interface OnlineGameScreenProps {
 
 export default function OnlineGameScreen({ navigation, route }: OnlineGameScreenProps) {
   const { room: initialRoom, player: myPlayer, isHost } = route.params
+  const { height: windowHeight } = useWindowDimensions()
 
   const [room, setRoom] = useState<OnlineRoom>(initialRoom)
   const [players, setPlayers] = useState<OnlinePlayer[]>(route.params.players || [myPlayer])
@@ -326,27 +327,42 @@ export default function OnlineGameScreen({ navigation, route }: OnlineGameScreen
 
       {/* Game Playing */}
       {gameStatus === 'playing' && (
-        <ScrollView style={styles.gameContainer}>
-          <TurnIndicator
-            currentPlayer={currentPlayer}
-            allPlayers={gamePlayers}
-            gameStatus={gameStatus}
-          />
+        <View style={styles.gameContainer}>
+          {/* Compact Header with Turn Info */}
+          <View style={styles.gameHeader}>
+            <View style={styles.turnInfo}>
+              <Text style={styles.turnLabel}>GILIRAN</Text>
+              <Text style={styles.turnName}>{currentPlayer?.name}</Text>
+            </View>
+            <View style={styles.playersRow}>
+              {gamePlayers.map((p) => (
+                <View key={p.id} style={styles.playerBadge}>
+                  <View style={[styles.playerDot, { backgroundColor: p.color }]} />
+                  <Text style={styles.playerBadgeName}>{p.name.substring(0, 6)}</Text>
+                  <Text style={styles.playerBadgePos}>📍{p.position}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
 
-          <GameBoard players={gamePlayers} />
+          {/* Game Board - Responsive Size */}
+          <View style={styles.boardWrapper}>
+            <GameBoard players={gamePlayers} />
+          </View>
 
-          <View style={styles.diceContainer}>
+          {/* Dice Section - Fixed at Bottom */}
+          <View style={styles.diceSection}>
             <DiceRoller
               onRoll={handleDiceRoll}
               isDisabled={!isMyTurn() || isAnimating}
             />
             {!isMyTurn() && (
               <Text style={styles.waitTurnText}>
-                Giliran {currentPlayer?.name}...
+                Menunggu {currentPlayer?.name}...
               </Text>
             )}
           </View>
-        </ScrollView>
+        </View>
       )}
 
       {/* Dice Result Modal */}
@@ -386,45 +402,46 @@ export default function OnlineGameScreen({ navigation, route }: OnlineGameScreen
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f4f8',
+    backgroundColor: '#1a1a2e',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     backgroundColor: '#4CAF50',
   },
   roomInfo: {
     flex: 1,
   },
   roomName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#fff',
   },
   roomCode: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#e8f5e9',
-    marginTop: 2,
   },
   leaveButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   leaveButtonText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
   },
   waitingContainer: {
     flex: 1,
     padding: 24,
     alignItems: 'center',
+    backgroundColor: '#f0f4f8',
   },
   waitingTitle: {
     fontSize: 24,
@@ -486,17 +503,75 @@ const styles = StyleSheet.create({
     color: '#666',
     fontStyle: 'italic',
   },
+  // Game Playing Styles - Responsive
   gameContainer: {
     flex: 1,
+    backgroundColor: '#1a1a2e',
   },
-  diceContainer: {
+  gameHeader: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#16213e',
+  },
+  turnInfo: {
+    flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    marginBottom: 6,
+  },
+  turnLabel: {
+    fontSize: 11,
+    color: '#888',
+    marginRight: 8,
+  },
+  turnName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  playersRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  playerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  playerDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 4,
+  },
+  playerBadgeName: {
+    fontSize: 11,
+    color: '#fff',
+    marginRight: 4,
+  },
+  playerBadgePos: {
+    fontSize: 10,
+    color: '#aaa',
+  },
+  boardWrapper: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  diceSection: {
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingBottom: 20,
+    backgroundColor: '#16213e',
   },
   waitTurnText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#666',
+    marginTop: 8,
+    fontSize: 14,
+    color: '#888',
     fontStyle: 'italic',
   },
   diceModalOverlay: {

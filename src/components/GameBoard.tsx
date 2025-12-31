@@ -1,5 +1,5 @@
 import React from 'react'
-import { View, Text, StyleSheet, Dimensions } from 'react-native'
+import { View, Text, StyleSheet, Dimensions, useWindowDimensions } from 'react-native'
 import { Player, STANDARD_BOARD } from '../types/game'
 import { useGameStore } from '../store/gameStore'
 import SnakeDrawing from './SnakeDrawing'
@@ -11,9 +11,6 @@ interface GameBoardProps {
 }
 
 const BOARD_SIZE = 10
-const { width: screenWidth } = Dimensions.get('window')
-const BOARD_WIDTH = Math.min(screenWidth - 32, 380)
-const CELL_SIZE = BOARD_WIDTH / BOARD_SIZE
 
 // Snake colors for visual variety
 const SNAKE_COLORS = ['#3B82F6', '#EF4444', '#F59E0B', '#EC4899', '#3B82F6']
@@ -34,7 +31,7 @@ const LADDERS_VISUAL = Object.entries(STANDARD_BOARD.ladders).map(([bottom, top]
  * Get the pixel position for a square number
  * Board uses snake pattern: row 1 (1-10) left-to-right, row 2 (11-20) right-to-left, etc.
  */
-const getSquarePosition = (squareNumber: number): { x: number; y: number } => {
+const getSquarePosition = (squareNumber: number, cellSize: number): { x: number; y: number } => {
   const adjustedNumber = squareNumber - 1
   const row = Math.floor(adjustedNumber / BOARD_SIZE)
   const col = adjustedNumber % BOARD_SIZE
@@ -43,8 +40,8 @@ const getSquarePosition = (squareNumber: number): { x: number; y: number } => {
   const actualCol = row % 2 === 0 ? col : (BOARD_SIZE - 1) - col
   
   // Y is inverted because row 0 is at bottom
-  const x = actualCol * CELL_SIZE + CELL_SIZE / 2
-  const y = (BOARD_SIZE - 1 - row) * CELL_SIZE + CELL_SIZE / 2
+  const x = actualCol * cellSize + cellSize / 2
+  const y = (BOARD_SIZE - 1 - row) * cellSize + cellSize / 2
   
   return { x, y }
 }
@@ -63,6 +60,13 @@ const getSquareNumber = (row: number, col: number): number => {
  */
 export default function GameBoard({ players }: GameBoardProps) {
   const { isAnimating, animatingPlayerId, animationPosition } = useGameStore()
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions()
+  
+  // Calculate responsive board size - fit in available space
+  const maxBoardWidth = screenWidth - 24
+  const maxBoardHeight = screenHeight - 280 // Leave space for header, dice, etc
+  const BOARD_WIDTH = Math.min(maxBoardWidth, maxBoardHeight, 400)
+  const CELL_SIZE = BOARD_WIDTH / BOARD_SIZE
 
   // Get display position for a player (considering animation)
   const getPlayerDisplayPosition = (player: Player): number => {
@@ -103,7 +107,10 @@ export default function GameBoard({ players }: GameBoardProps) {
             <Text
               style={[
                 styles.squareNumber,
-                { color: isLightSquare ? '#1a5c1a' : '#90EE90' },
+                { 
+                  color: isLightSquare ? '#1a5c1a' : '#90EE90',
+                  fontSize: CELL_SIZE * 0.32,
+                },
               ]}
             >
               {squareNum}
@@ -111,7 +118,7 @@ export default function GameBoard({ players }: GameBoardProps) {
             
             {/* Win square trophy */}
             {isWinSquare && (
-              <Text style={styles.trophy}>🏆</Text>
+              <Text style={[styles.trophy, { fontSize: CELL_SIZE * 0.5 }]}>🏆</Text>
             )}
             
             {/* Players on this square */}
@@ -121,8 +128,8 @@ export default function GameBoard({ players }: GameBoardProps) {
                 style={[
                   styles.playerTokenWrapper,
                   {
-                    bottom: 2 + index * 8,
-                    right: 2 + index * 8,
+                    bottom: 2 + index * 6,
+                    right: 2 + index * 6,
                   },
                 ]}
               >
@@ -153,8 +160,8 @@ export default function GameBoard({ players }: GameBoardProps) {
           
           {/* Snakes overlay */}
           {SNAKES_VISUAL.map((snake, index) => {
-            const headPos = getSquarePosition(snake.head)
-            const tailPos = getSquarePosition(snake.tail)
+            const headPos = getSquarePosition(snake.head, CELL_SIZE)
+            const tailPos = getSquarePosition(snake.tail, CELL_SIZE)
             return (
               <SnakeDrawing
                 key={`snake-${index}`}
@@ -170,8 +177,8 @@ export default function GameBoard({ players }: GameBoardProps) {
           
           {/* Ladders overlay */}
           {LADDERS_VISUAL.map((ladder, index) => {
-            const bottomPos = getSquarePosition(ladder.bottom)
-            const topPos = getSquarePosition(ladder.top)
+            const bottomPos = getSquarePosition(ladder.bottom, CELL_SIZE)
+            const topPos = getSquarePosition(ladder.top, CELL_SIZE)
             return (
               <LadderDrawing
                 key={`ladder-${index}`}
@@ -185,18 +192,6 @@ export default function GameBoard({ players }: GameBoardProps) {
           })}
         </View>
       </View>
-      
-      {/* Legend */}
-      <View style={styles.legend}>
-        <View style={styles.legendItem}>
-          <Text style={styles.legendIcon}>🐍</Text>
-          <Text style={styles.legendText}>Snake (slide down)</Text>
-        </View>
-        <View style={styles.legendItem}>
-          <Text style={styles.legendIcon}>🪜</Text>
-          <Text style={styles.legendText}>Ladder (climb up)</Text>
-        </View>
-      </View>
     </View>
   )
 }
@@ -206,10 +201,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   jungleBorder: {
-    padding: 8,
+    padding: 6,
     backgroundColor: '#0D5C4D',
-    borderRadius: 12,
-    borderWidth: 4,
+    borderRadius: 10,
+    borderWidth: 3,
     borderColor: '#094D40',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -231,11 +226,10 @@ const styles = StyleSheet.create({
   square: {
     justifyContent: 'flex-start',
     alignItems: 'flex-start',
-    padding: 2,
+    padding: 1,
     position: 'relative',
   },
   squareNumber: {
-    fontSize: CELL_SIZE * 0.32,
     fontWeight: 'bold',
     textShadowColor: 'rgba(0,0,0,0.2)',
     textShadowOffset: { width: 1, height: 1 },
@@ -243,34 +237,11 @@ const styles = StyleSheet.create({
   },
   trophy: {
     position: 'absolute',
-    fontSize: CELL_SIZE * 0.5,
-    top: '50%',
-    left: '50%',
-    transform: [
-      { translateX: -CELL_SIZE * 0.25 },
-      { translateY: -CELL_SIZE * 0.25 },
-    ],
+    top: '25%',
+    left: '25%',
   },
   playerTokenWrapper: {
     position: 'absolute',
     zIndex: 20,
-  },
-  legend: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 12,
-    gap: 20,
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  legendIcon: {
-    fontSize: 16,
-  },
-  legendText: {
-    fontSize: 12,
-    color: '#666',
   },
 })
