@@ -33,6 +33,25 @@ Game ular tangga klasik yang dibangun dengan React Native + Expo. Mainkan melawa
 - 🗑️ Auto-cleanup room setelah game selesai
 - 📤 Share room code functionality
 
+## 📱 Build APK
+
+Untuk build aplikasi menjadi file APK Android, ikuti panduan lengkap di:
+👉 **[Build APK Guide](docs/build-apk-guide.md)**
+
+**Quick Build:**
+```bash
+# Install EAS CLI
+npm install -g eas-cli
+
+# Login
+eas login
+
+# Build APK
+eas build --platform android --profile preview
+```
+
+---
+
 ## 🚀 Quick Start
 
 ### Prerequisites
