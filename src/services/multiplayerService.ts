@@ -31,6 +31,52 @@ export interface GameUpdate {
 class MultiplayerService {
   private channel: RealtimeChannel | null = null
   private currentRoomId: string | null = null
+  private currentPlayerId: string | null = null
+  private heartbeatInterval: NodeJS.Timeout | null = null
+
+  /**
+   * Start heartbeat to keep player session alive
+   */
+  private startHeartbeat(playerId: string): void {
+    // Clear any existing heartbeat
+    this.stopHeartbeat()
+    
+    this.currentPlayerId = playerId
+    
+    // Send heartbeat every 30 seconds
+    this.heartbeatInterval = setInterval(async () => {
+      if (this.currentPlayerId) {
+        await this.sendHeartbeat(this.currentPlayerId)
+      }
+    }, 30000)
+    
+    // Send initial heartbeat
+    this.sendHeartbeat(playerId)
+  }
+
+  /**
+   * Stop heartbeat
+   */
+  private stopHeartbeat(): void {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval)
+      this.heartbeatInterval = null
+    }
+  }
+
+  /**
+   * Send heartbeat to update last_active
+   */
+  private async sendHeartbeat(playerId: string): Promise<void> {
+    try {
+      await supabase
+        .from('game_players')
+        .update({ last_active: new Date().toISOString() })
+        .eq('id', playerId)
+    } catch (error) {
+      console.error('Heartbeat error:', error)
+    }
+  }
 
   /**
    * Create a new game room
@@ -88,6 +134,9 @@ class MultiplayerService {
         isCurrentTurn: true,
         playerOrder: 0,
       }
+
+      // Start heartbeat for this player
+      this.startHeartbeat(playerData.id)
 
       return { room, player }
     } catch (error) {
@@ -192,6 +241,9 @@ class MultiplayerService {
         playerOrder: p.player_order,
       }))
 
+      // Start heartbeat for this player
+      this.startHeartbeat(playerData.id)
+
       return { room, player, players }
     } catch (error) {
       console.error('Error in joinRoom:', error)
@@ -290,7 +342,11 @@ class MultiplayerService {
     try {
       const { error } = await supabase
         .from('game_rooms')
-        .update({ status: 'playing', started_at: new Date().toISOString() })
+        .update({ 
+          status: 'playing', 
+          started_at: new Date().toISOString(),
+          last_activity: new Date().toISOString()
+        })
         .eq('id', roomId)
 
       if (error) {
@@ -313,7 +369,7 @@ class MultiplayerService {
     try {
       const { error } = await supabase
         .from('game_players')
-        .update({ position })
+        .update({ position, last_active: new Date().toISOString() })
         .eq('id', playerId)
 
       return !error
@@ -412,10 +468,14 @@ class MultiplayerService {
    */
   async leaveRoom(playerId: string, roomId: string): Promise<void> {
     try {
+      // Stop heartbeat
+      this.stopHeartbeat()
+      this.currentPlayerId = null
+
       await supabase.from('game_players').delete().eq('id', playerId)
 
       // Check remaining players
-      const { data: remainingPlayers, error: countError } = await supabase
+      const { data: remainingPlayers } = await supabase
         .from('game_players')
         .select('id')
         .eq('room_id', roomId)
@@ -465,38 +525,99 @@ class MultiplayerService {
   }
 
   /**
-   * Cleanup finished rooms (call periodically or on lobby load)
+   * Cleanup finished rooms and stale players (call periodically or on lobby load)
    */
   async cleanupFinishedRooms(): Promise<number> {
     try {
-      // Get all finished rooms
-      const { data: finishedRooms, error: fetchError } = await supabase
+      let deletedCount = 0
+
+      // 1. Cleanup stale players (inactive for more than 2 minutes)
+      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString()
+      
+      const { data: stalePlayers } = await supabase
+        .from('game_players')
+        .select('id, room_id')
+        .lt('last_active', twoMinutesAgo)
+
+      if (stalePlayers && stalePlayers.length > 0) {
+        console.log(`Found ${stalePlayers.length} stale players to cleanup`)
+        
+        // Get unique room IDs
+        const roomIds = [...new Set(stalePlayers.map(p => p.room_id))]
+        
+        // Delete stale players
+        await supabase
+          .from('game_players')
+          .delete()
+          .lt('last_active', twoMinutesAgo)
+
+        // Update player counts for affected rooms
+        for (const roomId of roomIds) {
+          const { data: remainingPlayers } = await supabase
+            .from('game_players')
+            .select('id')
+            .eq('room_id', roomId)
+
+          const count = remainingPlayers?.length || 0
+          
+          if (count === 0) {
+            // Delete empty room
+            await this.deleteRoom(roomId)
+            deletedCount++
+          } else {
+            await supabase
+              .from('game_rooms')
+              .update({ current_players: count })
+              .eq('id', roomId)
+          }
+        }
+      }
+
+      // 2. Delete finished rooms
+      const { data: finishedRooms } = await supabase
         .from('game_rooms')
         .select('id')
         .eq('status', 'finished')
 
-      if (fetchError || !finishedRooms) return 0
-
-      let deletedCount = 0
-      for (const room of finishedRooms) {
-        const success = await this.deleteRoom(room.id)
-        if (success) deletedCount++
+      if (finishedRooms) {
+        for (const room of finishedRooms) {
+          const success = await this.deleteRoom(room.id)
+          if (success) deletedCount++
+        }
       }
 
-      // Also cleanup rooms with 0 players
-      const { data: emptyRooms, error: emptyError } = await supabase
+      // 3. Delete rooms with 0 players
+      const { data: emptyRooms } = await supabase
         .from('game_rooms')
         .select('id')
         .eq('current_players', 0)
 
-      if (!emptyError && emptyRooms) {
+      if (emptyRooms) {
         for (const room of emptyRooms) {
           const success = await this.deleteRoom(room.id)
           if (success) deletedCount++
         }
       }
 
-      console.log(`Cleaned up ${deletedCount} rooms`)
+      // 4. Delete waiting rooms with no activity for 10 minutes
+      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString()
+      
+      const { data: staleWaitingRooms } = await supabase
+        .from('game_rooms')
+        .select('id')
+        .eq('status', 'waiting')
+        .lt('last_activity', tenMinutesAgo)
+
+      if (staleWaitingRooms) {
+        for (const room of staleWaitingRooms) {
+          const success = await this.deleteRoom(room.id)
+          if (success) deletedCount++
+        }
+      }
+
+      if (deletedCount > 0) {
+        console.log(`Cleaned up ${deletedCount} rooms`)
+      }
       return deletedCount
     } catch (error) {
       console.error('Error in cleanupFinishedRooms:', error)
@@ -508,6 +629,10 @@ class MultiplayerService {
    * Unsubscribe from room
    */
   unsubscribe(): void {
+    // Stop heartbeat
+    this.stopHeartbeat()
+    this.currentPlayerId = null
+
     if (this.channel) {
       supabase.removeChannel(this.channel)
       this.channel = null
