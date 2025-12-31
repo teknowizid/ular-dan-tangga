@@ -23,9 +23,10 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const [playerName, setPlayerName] = useState('')
   const [roomName, setRoomName] = useState('')
   const [selectedColor, setSelectedColor] = useState(PLAYER_COLORS[0])
+  const [isMusicOn, setIsMusicOn] = useState(true)
   const soundRef = useRef<Audio.Sound | null>(null)
 
-  const { createGameRoom, players } = useGameStore()
+  const { createGameRoom } = useGameStore()
 
   // Play welcome intro music on mount
   useEffect(() => {
@@ -33,7 +34,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       try {
         const { sound } = await Audio.Sound.createAsync(
           require('../../assets/sound/welcome-intro.mp3'),
-          { shouldPlay: true, volume: 0.7 }
+          { shouldPlay: true, volume: 0.7, isLooping: true }
         )
         soundRef.current = sound
       } catch (error) {
@@ -50,6 +51,18 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       }
     }
   }, [])
+
+  // Toggle music on/off
+  const toggleMusic = async () => {
+    if (soundRef.current) {
+      if (isMusicOn) {
+        await soundRef.current.pauseAsync()
+      } else {
+        await soundRef.current.playAsync()
+      }
+      setIsMusicOn(!isMusicOn)
+    }
+  }
 
   const handleCreateGame = () => {
     if (!playerName.trim()) {
@@ -80,6 +93,17 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Header */}
       <View style={styles.header}>
+        <View style={styles.headerTop}>
+          <View style={styles.headerSpacer} />
+          <Pressable
+            style={styles.musicToggle}
+            onPress={toggleMusic}
+          >
+            <Text style={styles.musicToggleText}>
+              {isMusicOn ? '🔊' : '🔇'}
+            </Text>
+          </Pressable>
+        </View>
         <Text style={styles.title}>🐍 Snake & Ladder 🪜</Text>
         <Text style={styles.subtitle}>Multiplayer Board Game</Text>
       </View>
@@ -216,6 +240,32 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginVertical: 24,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 12,
+  },
+  headerSpacer: {
+    width: 44,
+  },
+  musicToggle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  musicToggleText: {
+    fontSize: 24,
   },
   title: {
     fontSize: 32,
