@@ -142,7 +142,7 @@ dan project ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Added `getTakenAvatarsInRoom()` untuk cek avatar yang sudah dipakai
 - Updated `multiplayerService.ts` dengan heartbeat system
 - Updated `boardLogic.ts` dengan bounce back logic
-- Added `force-cleanup.js` untuk cleanup paksa semua room
+- Added `scripts/force-cleanup.js` untuk cleanup paksa semua room
 
 ---
 

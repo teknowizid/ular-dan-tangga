@@ -113,13 +113,13 @@ Untuk database baru, jalankan file berikut secara berurutan:
 
 ### Opsi 2: Via Node.js Script
 
-Gunakan script `run-migration.js` di root folder:
+Gunakan script `run-migration.js` di folder scripts:
 
 ```bash
-node run-migration.js supabase/02-anonymous-multiplayer-schema.sql
-node run-migration.js supabase/04-add-session-tracking.sql
-node run-migration.js supabase/05-add-player-avatar.sql
-node run-migration.js supabase/06-add-leaderboard-and-stats.sql
+node scripts/run-migration.js supabase/02-anonymous-multiplayer-schema.sql
+node scripts/run-migration.js supabase/04-add-session-tracking.sql
+node scripts/run-migration.js supabase/05-add-player-avatar.sql
+node scripts/run-migration.js supabase/06-add-leaderboard-and-stats.sql
 ```
 
 ---
