@@ -7,7 +7,6 @@ import {
   Alert,
   Modal,
   SafeAreaView,
-  Dimensions,
 } from 'react-native'
 import { useGameStore } from '../store/gameStore'
 import GameBoard from '../components/GameBoard'
@@ -15,8 +14,7 @@ import DiceRoller from '../components/DiceRoller'
 import GameEventModal from '../components/GameEventModal'
 import { checkWin } from '../utils/boardLogic'
 import { playGameStartSound } from '../utils/soundUtils'
-
-const { height: SCREEN_HEIGHT } = Dimensions.get('window')
+import { CollisionEvent } from '../types/game'
 
 // Dot patterns for dice face
 const DOT_PATTERNS: { [key: number]: { top: number; left: number }[] } = {
@@ -84,6 +82,8 @@ export default function GameScreen({ navigation }: GameScreenProps) {
   const [showSnakeModal, setShowSnakeModal] = useState(false)
   const [showLadderModal, setShowLadderModal] = useState(false)
   const [showBounceModal, setShowBounceModal] = useState(false)
+  const [showCollisionModal, setShowCollisionModal] = useState(false)
+  const [collisionInfo, setCollisionInfo] = useState<{ bumpedPlayerName: string; fromPosition: number; toPosition: number } | null>(null)
   const [showWinnerModal, setShowWinnerModal] = useState(false)
   const [winnerName, setWinnerName] = useState<string>('')
   
@@ -96,6 +96,7 @@ export default function GameScreen({ navigation }: GameScreenProps) {
     winner,
     currentPlayerId,
     moveHistory,
+    hasBonusRoll,
     processMove,
     endPlayerTurn,
     startGame,
@@ -104,6 +105,7 @@ export default function GameScreen({ navigation }: GameScreenProps) {
     resumeGame,
     setAnimating,
     setAnimationPosition,
+    applyCollision,
     isMyTurn,
     getCurrentPlayer,
   } = useGameStore()
@@ -162,11 +164,25 @@ export default function GameScreen({ navigation }: GameScreenProps) {
     const moveResult = processMove(currentPlayerId, result)
     if (moveResult) {
       animateMovement(currentPlayerId, startPosition, moveResult.position, result, () => {
-        if (moveResult.moveType === 'snake') setShowSnakeModal(true)
+        // Handle collision first
+        if (moveResult.collision) {
+          setCollisionInfo({
+            bumpedPlayerName: moveResult.collision.bumpedPlayerName,
+            fromPosition: moveResult.collision.bumpedFromPosition,
+            toPosition: moveResult.collision.bumpedToPosition,
+          })
+          applyCollision(moveResult.collision)
+          setShowCollisionModal(true)
+        }
+        // Then show other modals
+        else if (moveResult.moveType === 'snake') setShowSnakeModal(true)
         else if (moveResult.moveType === 'ladder') setShowLadderModal(true)
         else if (moveResult.moveType === 'bounce') setShowBounceModal(true)
+        
         if (checkWin(moveResult.position)) return
-        const delay = moveResult.moveType !== 'normal' ? 2000 : 500
+        
+        // Delay based on move type, collision gets extra time
+        const delay = moveResult.collision ? 2500 : (moveResult.moveType !== 'normal' ? 2000 : 500)
         setTimeout(() => endPlayerTurn(), delay)
       })
     }
@@ -197,7 +213,20 @@ export default function GameScreen({ navigation }: GameScreenProps) {
       const moveResult = processMove(botId, botResult)
       if (moveResult) {
         animateMovement(botId, startPosition, moveResult.position, botResult, () => {
-          if (!checkWin(moveResult.position)) setTimeout(() => endPlayerTurn(), 500)
+          // Handle collision for bot
+          if (moveResult.collision) {
+            setCollisionInfo({
+              bumpedPlayerName: moveResult.collision.bumpedPlayerName,
+              fromPosition: moveResult.collision.bumpedFromPosition,
+              toPosition: moveResult.collision.bumpedToPosition,
+            })
+            applyCollision(moveResult.collision)
+            setShowCollisionModal(true)
+          }
+          if (!checkWin(moveResult.position)) {
+            const delay = moveResult.collision ? 2500 : 500
+            setTimeout(() => endPlayerTurn(), delay)
+          }
         })
       }
     }, 1500)
@@ -216,7 +245,7 @@ export default function GameScreen({ navigation }: GameScreenProps) {
     setShowWinnerModal(false)
     useGameStore.setState((state) => ({
       players: state.players.map((p, i) => ({ ...p, position: 1, isCurrentTurn: i === 0, diceResult: undefined })),
-      currentPlayerIndex: 0, gameStatus: 'playing', winner: null, moveHistory: [],
+      currentPlayerIndex: 0, gameStatus: 'playing', winner: null, moveHistory: [], hasBonusRoll: false, lastCollision: null,
     }))
   }
   const handleExitGame = () => { setShowWinModal(false); setShowWinnerModal(false); resetGame(); navigation.navigate('Home') }
@@ -227,7 +256,14 @@ export default function GameScreen({ navigation }: GameScreenProps) {
       <View style={styles.header}>
         <View style={styles.turnInfo}>
           <Text style={styles.turnLabel}>GILIRAN</Text>
-          <Text style={styles.turnName} numberOfLines={1}>{currentPlayer?.name || 'Menunggu...'}</Text>
+          <View style={styles.turnNameRow}>
+            <Text style={styles.turnName} numberOfLines={1}>{currentPlayer?.name || 'Menunggu...'}</Text>
+            {hasBonusRoll && gameStatus === 'playing' && (
+              <View style={styles.bonusBadge}>
+                <Text style={styles.bonusText}>🎲 BONUS!</Text>
+              </View>
+            )}
+          </View>
         </View>
         {gameStatus === 'playing' && (
           <Pressable style={styles.pauseBtn} onPress={handlePauseGame}>
@@ -275,6 +311,7 @@ export default function GameScreen({ navigation }: GameScreenProps) {
                   {lastMove.moveType === 'snake' && ' 🐍'}
                   {lastMove.moveType === 'ladder' && ' 🪜'}
                   {lastMove.moveType === 'bounce' && ' ↩️'}
+                  {lastMove.moveType === 'collision' && ' 💥'}
                 </Text>
               </View>
             )}
@@ -334,6 +371,12 @@ export default function GameScreen({ navigation }: GameScreenProps) {
       <GameEventModal visible={showSnakeModal} type="snake" onClose={() => setShowSnakeModal(false)} />
       <GameEventModal visible={showLadderModal} type="ladder" onClose={() => setShowLadderModal(false)} />
       <GameEventModal visible={showBounceModal} type="bounce" onClose={() => setShowBounceModal(false)} />
+      <GameEventModal 
+        visible={showCollisionModal} 
+        type="collision" 
+        collisionInfo={collisionInfo || undefined}
+        onClose={() => setShowCollisionModal(false)} 
+      />
       <GameEventModal visible={showWinnerModal} type="winner" playerName={winnerName} />
     </SafeAreaView>
   )
@@ -365,6 +408,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#fff',
     fontWeight: 'bold',
+  },
+  turnNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  bonusBadge: {
+    backgroundColor: '#FFD700',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  bonusText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#333',
   },
   pauseBtn: {
     width: 36,

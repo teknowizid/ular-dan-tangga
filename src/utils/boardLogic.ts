@@ -1,4 +1,31 @@
-import { MoveEvent, MoveResult, ValidationResult, STANDARD_BOARD } from '../types/game'
+import { MoveEvent, MoveResult, ValidationResult, STANDARD_BOARD, CollisionEvent } from '../types/game'
+
+/**
+ * Check if landing on a position causes a collision with another player
+ * @param position - The position to check
+ * @param players - Array of all players
+ * @param currentPlayerId - ID of the player making the move (to exclude from check)
+ * @returns CollisionEvent if collision occurs, null otherwise
+ */
+export const checkCollision = <T extends { id: string; position: number; name: string }>(
+  position: number,
+  players: T[],
+  currentPlayerId: string
+): CollisionEvent | null => {
+  const bumpedPlayer = players.find(p => p.id !== currentPlayerId && p.position === position)
+  
+  if (bumpedPlayer) {
+    const newPosition = Math.max(1, bumpedPlayer.position - 2) // Move back 2 squares, minimum 1
+    return {
+      bumpedPlayerId: bumpedPlayer.id,
+      bumpedPlayerName: bumpedPlayer.name,
+      bumpedFromPosition: bumpedPlayer.position,
+      bumpedToPosition: newPosition,
+    }
+  }
+  
+  return null
+}
 
 /**
  * Calculate new position after dice roll, applying snake/ladder effects
@@ -168,7 +195,7 @@ export const validateMove = (
  * @param previousPosition - Position before the move
  * @param newPosition - Position after the move
  * @param diceRoll - The dice roll value
- * @param moveType - Type of move (normal, snake, ladder, or bounce)
+ * @param moveType - Type of move (normal, snake, ladder, bounce, or collision)
  * @returns MoveEvent object
  */
 export const createMoveEvent = (
@@ -177,7 +204,7 @@ export const createMoveEvent = (
   previousPosition: number,
   newPosition: number,
   diceRoll: number,
-  moveType: 'normal' | 'snake' | 'ladder' | 'bounce'
+  moveType: 'normal' | 'snake' | 'ladder' | 'bounce' | 'collision'
 ): MoveEvent => {
   return {
     playerId,

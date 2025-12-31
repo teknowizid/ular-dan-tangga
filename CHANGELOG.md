@@ -5,6 +5,36 @@ Semua perubahan penting pada project ini akan didokumentasikan di file ini.
 Format berdasarkan [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 dan project ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2024-12-31
+
+### 🎲 Bonus Roll 6 & Collision Update
+
+### Added
+
+#### Bonus Roll 6
+- ✅ 🎲 Jika pemain dapat angka 6, berhak lempar dadu 1x lagi
+- ✅ 🔄 Pemain bisa main 2x berturut-turut jika dapat 6
+- ✅ 🏷️ Badge "BONUS!" di header saat pemain dapat bonus roll
+- ✅ 🤖 Bot juga support bonus roll 6
+
+#### Collision / Tabrakan
+- ✅ 💥 Jika pemain mendarat di kotak yang ada pemain lain, terjadi tabrakan
+- ✅ ⬅️ Pemain yang ditabrak mundur 2 kotak (minimum kotak 1)
+- ✅ 🎨 Modal collision dengan animasi shake dan warna ungu
+- ✅ 📜 Indikator 💥 di riwayat langkah untuk collision
+- ✅ 🤖 Bot juga support collision
+
+### Technical
+- Added `CollisionEvent` interface di types/game.ts
+- Added `checkCollision()` function di boardLogic.ts
+- Added `hasBonusRoll` dan `lastCollision` state di gameStore
+- Added `applyCollision()` action di gameStore
+- Updated `processMove()` untuk return collision info
+- Updated `endPlayerTurn()` untuk cek bonus roll sebelum ganti giliran
+- Added collision animation di GameEventModal
+
+---
+
 ## [1.3.0] - 2024-12-31
 
 ### 🇮🇩 Indonesian Language Update
@@ -213,6 +243,7 @@ Rilis pertama Snake & Ladder Game dengan fitur lengkap untuk single player dan m
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 1.4.0 | 2024-12-31 | Bonus roll 6, collision/tabrakan feature |
 | 1.3.0 | 2024-12-31 | Indonesian language localization |
 | 1.2.0 | 2024-12-31 | Player avatars, session tracking, bounce back rule |
 | 1.1.0 | 2024-12-31 | Sound effects, multiplayer online, responsive UI |

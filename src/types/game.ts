@@ -46,7 +46,17 @@ export interface MoveEvent {
   newPosition: number
   diceRoll: number
   timestamp: Date
-  moveType: 'normal' | 'snake' | 'ladder' | 'bounce'
+  moveType: 'normal' | 'snake' | 'ladder' | 'bounce' | 'collision'
+}
+
+/**
+ * Represents a collision event when a player lands on another player's position
+ */
+export interface CollisionEvent {
+  bumpedPlayerId: string
+  bumpedPlayerName: string
+  bumpedFromPosition: number
+  bumpedToPosition: number
 }
 
 /**
@@ -75,7 +85,7 @@ export interface GameUpdatePayload {
  */
 export interface MoveResult {
   position: number
-  moveType: 'normal' | 'snake' | 'ladder' | 'bounce'
+  moveType: 'normal' | 'snake' | 'ladder' | 'bounce' | 'collision'
 }
 
 /**

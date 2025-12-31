@@ -3,15 +3,20 @@ import { View, Text, StyleSheet, Modal, Animated, Easing } from 'react-native'
 
 interface GameEventModalProps {
   visible: boolean
-  type: 'snake' | 'ladder' | 'winner' | 'bounce'
+  type: 'snake' | 'ladder' | 'winner' | 'bounce' | 'collision'
   playerName?: string
+  collisionInfo?: {
+    bumpedPlayerName: string
+    fromPosition: number
+    toPosition: number
+  }
   onClose?: () => void
 }
 
 /**
- * GameEventModal - Animated modal for snake, ladder, and winner events
+ * GameEventModal - Animated modal for snake, ladder, winner, bounce, and collision events
  */
-export default function GameEventModal({ visible, type, playerName, onClose }: GameEventModalProps) {
+export default function GameEventModal({ visible, type, playerName, collisionInfo, onClose }: GameEventModalProps) {
   const scaleAnim = useRef(new Animated.Value(0)).current
   const rotateAnim = useRef(new Animated.Value(0)).current
   const bounceAnim = useRef(new Animated.Value(0)).current
@@ -122,6 +127,43 @@ export default function GameEventModal({ visible, type, playerName, onClose }: G
           ]),
           { iterations: 2 }
         ).start()
+      } else if (type === 'collision') {
+        // Collision animation - shake and bump effect
+        Animated.loop(
+          Animated.sequence([
+            Animated.timing(rotateAnim, {
+              toValue: 1,
+              duration: 80,
+              easing: Easing.linear,
+              useNativeDriver: true,
+            }),
+            Animated.timing(rotateAnim, {
+              toValue: -1,
+              duration: 160,
+              easing: Easing.linear,
+              useNativeDriver: true,
+            }),
+            Animated.timing(rotateAnim, {
+              toValue: 0,
+              duration: 80,
+              easing: Easing.linear,
+              useNativeDriver: true,
+            }),
+            Animated.timing(bounceAnim, {
+              toValue: -15,
+              duration: 150,
+              easing: Easing.out(Easing.quad),
+              useNativeDriver: true,
+            }),
+            Animated.timing(bounceAnim, {
+              toValue: 0,
+              duration: 150,
+              easing: Easing.in(Easing.quad),
+              useNativeDriver: true,
+            }),
+          ]),
+          { iterations: 3 }
+        ).start()
       } else if (type === 'winner') {
         // Spin and bounce for winner
         Animated.loop(
@@ -221,6 +263,16 @@ export default function GameEventModal({ visible, type, playerName, onClose }: G
           subtitle: 'Kamu mundur dari 100!',
           bgColor: '#FF9800',
           borderColor: '#F57C00',
+        }
+      case 'collision':
+        return {
+          emoji: '💥',
+          title: 'Tabrakan!',
+          subtitle: collisionInfo 
+            ? `${collisionInfo.bumpedPlayerName} mundur ke kotak ${collisionInfo.toPosition}!`
+            : 'Pemain lain mundur 2 kotak!',
+          bgColor: '#9C27B0',
+          borderColor: '#7B1FA2',
         }
       case 'winner':
         return {

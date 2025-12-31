@@ -1,6 +1,6 @@
 import { create } from 'zustand'
-import { Player, GameRoom, MoveEvent, STANDARD_BOARD } from '../types/game'
-import { calculateNewPosition, getNextPlayer, checkWin, createMoveEvent } from '../utils/boardLogic'
+import { Player, GameRoom, MoveEvent, STANDARD_BOARD, CollisionEvent } from '../types/game'
+import { calculateNewPosition, getNextPlayer, checkWin, createMoveEvent, checkCollision } from '../utils/boardLogic'
 
 interface GameStore {
   // State
@@ -16,6 +16,8 @@ interface GameStore {
   winner: Player | null
   currentSession: any
   currentPlayerId: string | null
+  hasBonusRoll: boolean // Track if player rolled 6 and gets bonus roll
+  lastCollision: CollisionEvent | null // Track last collision event
 
   // Auth
   user: any
@@ -32,9 +34,12 @@ interface GameStore {
   resumeGame: () => void
   setAnimating: (isAnimating: boolean, playerId?: string | null) => void
   setAnimationPosition: (position: number) => void
+  setHasBonusRoll: (hasBonusRoll: boolean) => void
+  setLastCollision: (collision: CollisionEvent | null) => void
+  applyCollision: (collision: CollisionEvent) => void
 
   // Game Actions
-  processMove: (playerId: string, diceRoll: number) => { position: number; moveType: string } | null
+  processMove: (playerId: string, diceRoll: number) => { position: number; moveType: string; collision?: CollisionEvent | null } | null
   endPlayerTurn: () => void
   recordMove: (move: MoveEvent) => void
 
@@ -76,6 +81,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   winner: null,
   currentSession: null,
   currentPlayerId: null,
+  hasBonusRoll: false,
+  lastCollision: null,
   user: null,
   isAuthenticated: false,
 
@@ -184,6 +191,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       isPaused: false,
       winner: null,
       currentPlayerId: null,
+      hasBonusRoll: false,
+      lastCollision: null,
     })
   },
 
@@ -213,6 +222,27 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({ animationPosition: position })
   },
 
+  // Set bonus roll state
+  setHasBonusRoll: (hasBonusRoll) => {
+    set({ hasBonusRoll })
+  },
+
+  // Set last collision
+  setLastCollision: (collision) => {
+    set({ lastCollision: collision })
+  },
+
+  // Apply collision - move bumped player back 2 squares
+  applyCollision: (collision) => {
+    set((state) => ({
+      players: state.players.map((p) =>
+        p.id === collision.bumpedPlayerId
+          ? { ...p, position: collision.bumpedToPosition }
+          : p
+      ),
+    }))
+  },
+
   // Process move
   processMove: (playerId, diceRoll) => {
     const state = get()
@@ -227,6 +257,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
       STANDARD_BOARD.ladders
     )
 
+    // Check for collision with other players
+    const collision = checkCollision(result.position, state.players, playerId)
+
     // Update player position
     const updatedPlayers = state.players.map((p) =>
       p.id === playerId
@@ -234,13 +267,21 @@ export const useGameStore = create<GameStore>((set, get) => ({
         : p
     )
 
-    set({ players: updatedPlayers })
+    // Set bonus roll if dice is 6
+    const hasBonusRoll = diceRoll === 6
+
+    set({ 
+      players: updatedPlayers,
+      hasBonusRoll,
+      lastCollision: collision,
+    })
 
     // Check win
     if (checkWin(result.position)) {
       set({
         gameStatus: 'finished',
         winner: { ...player, position: result.position },
+        hasBonusRoll: false, // No bonus roll if won
       })
     }
 
@@ -251,19 +292,25 @@ export const useGameStore = create<GameStore>((set, get) => ({
       player.position,
       result.position,
       diceRoll,
-      result.moveType
+      collision ? 'collision' : result.moveType
     )
     set((state) => ({
       moveHistory: [...state.moveHistory, moveEvent],
     }))
 
-    return result
+    return { ...result, collision }
   },
 
-  // End turn
+  // End turn - check for bonus roll first
   endPlayerTurn: () => {
     const state = get()
     if (state.gameStatus !== 'playing') return
+
+    // If player has bonus roll (rolled 6), don't switch turn
+    if (state.hasBonusRoll) {
+      set({ hasBonusRoll: false }) // Reset bonus roll flag
+      return // Stay on same player's turn
+    }
 
     const nextIndex = getNextPlayer(state.currentPlayerIndex, state.players.length)
 
@@ -274,6 +321,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         isCurrentTurn: i === nextIndex,
         diceResult: undefined,
       })),
+      hasBonusRoll: false,
     })
   },
 
@@ -336,9 +384,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
           newPosition: newPos,
           diceRoll,
           timestamp: new Date(),
-          moveType: moveType as 'normal' | 'snake' | 'ladder' | 'bounce',
+          moveType: moveType as 'normal' | 'snake' | 'ladder' | 'bounce' | 'collision',
         },
       ],
+      hasBonusRoll: diceRoll === 6, // Set bonus roll for remote player too
     }))
 
     // Check if remote player won
