@@ -10,27 +10,28 @@ export interface BoardConfig {
 
 /**
  * Current board configuration
- * TODO: Update these positions to match your board.png image
+ * Updated to match the actual board.png image positions
  */
 export const CUSTOM_BOARD_CONFIG: BoardConfig = {
   // Snakes (head → tail)
   snakes: {
-    17: 7,   // Snake head at 17, tail at 7
-    54: 34,  // Snake head at 54, tail at 34
+    99: 83,  // Snake head at 99, tail at 83
+    95: 36,  // Snake head at 95, tail at 36
     62: 19,  // Snake head at 62, tail at 19
-    87: 36,  // Snake head at 87, tail at 36
-    93: 73,  // Snake head at 93, tail at 73
-    99: 79,  // Snake head at 99, tail at 79
+    54: 14,  // Snake head at 54, tail at 14
+    17: 6,   // Snake head at 17, tail at 6
   },
   
   // Ladders (bottom → top)
   ladders: {
     3: 22,   // Ladder bottom at 3, top at 22
     5: 14,   // Ladder bottom at 5, top at 14
+    9: 31,   // Ladder bottom at 9, top at 31
     20: 39,  // Ladder bottom at 20, top at 39
     27: 84,  // Ladder bottom at 27, top at 84
     51: 67,  // Ladder bottom at 51, top at 67
     72: 91,  // Ladder bottom at 72, top at 91
+    73: 93,  // Ladder bottom at 73, top at 93
     88: 99,  // Ladder bottom at 88, top at 99
   },
 }

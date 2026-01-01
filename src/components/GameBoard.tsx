@@ -103,9 +103,9 @@ export default function GameBoard({ players }: GameBoardProps) {
             ]}
           >
             {/* Square number for debugging - uncomment to see numbers */}
-            <Text style={[styles.debugNumber, { fontSize: CELL_SIZE * 0.2 }]}>
+            {/* <Text style={[styles.debugNumber, { fontSize: CELL_SIZE * 0.2 }]}>
               {squareNum}
-            </Text>
+            </Text> */}
             
             {/* Win square trophy */}
             {isWinSquare && (
