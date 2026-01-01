@@ -14,6 +14,7 @@ import GameEventModal from '../components/GameEventModal'
 import { multiplayerService, OnlineRoom, OnlinePlayer, GameUpdate } from '../services/multiplayerService'
 import { calculateNewPosition, checkWin } from '../utils/boardLogic'
 import { STANDARD_BOARD, Player } from '../types/game'
+import { CUSTOM_BOARD_CONFIG } from '../config/boardConfig'
 import { playGameStartSound } from '../utils/soundUtils'
 
 interface OnlineGameScreenProps {
@@ -154,8 +155,8 @@ export default function OnlineGameScreen({ navigation, route }: OnlineGameScreen
     const result = calculateNewPosition(
       previousPos,
       value,
-      STANDARD_BOARD.snakes,
-      STANDARD_BOARD.ladders
+      CUSTOM_BOARD_CONFIG.snakes,
+      CUSTOM_BOARD_CONFIG.ladders
     )
 
     // Animate movement

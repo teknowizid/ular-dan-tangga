@@ -112,6 +112,10 @@ export interface LeaderboardEntry {
 
 /**
  * Standard board configuration with predefined snake and ladder positions
+ * NOTE: This is the old/default configuration. 
+ * The actual game now uses CUSTOM_BOARD_CONFIG from src/config/boardConfig.ts
+ * 
+ * Legacy configuration:
  * Snakes: 17→7, 54→34, 62→19, 87→36, 93→73, 99→79
  * Ladders: 3→22, 5→14, 20→39, 27→84, 51→67, 72→91, 88→99
  */

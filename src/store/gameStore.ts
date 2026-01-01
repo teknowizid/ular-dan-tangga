@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { Player, GameRoom, MoveEvent, STANDARD_BOARD, CollisionEvent } from '../types/game'
+import { CUSTOM_BOARD_CONFIG } from '../config/boardConfig'
 import { calculateNewPosition, getNextPlayer, checkWin, createMoveEvent, checkCollision } from '../utils/boardLogic'
 
 interface GameStore {
@@ -253,8 +254,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const result = calculateNewPosition(
       player.position,
       diceRoll,
-      STANDARD_BOARD.snakes,
-      STANDARD_BOARD.ladders
+      CUSTOM_BOARD_CONFIG.snakes,
+      CUSTOM_BOARD_CONFIG.ladders
     )
 
     // Check for collision with other players
