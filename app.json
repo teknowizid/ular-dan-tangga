@@ -30,9 +30,16 @@
         "foregroundImage": "./assets/game-icon.png",
         "backgroundColor": "#4CAF50"
       },
+      "splash": {
+        "image": "./assets/splash.png",
+        "resizeMode": "cover",
+        "backgroundColor": "#ffffff"
+      },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.snakeladder.game"
+      "package": "com.snakeladder.game",
+      "statusBarStyle": "light",
+      "statusBarBackgroundColor": "#ffffff"
     },
     "web": {
       "favicon": "./assets/favicon.png",
