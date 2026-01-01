@@ -5,6 +5,38 @@ Semua perubahan penting pada project ini akan didokumentasikan di file ini.
 Format berdasarkan [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 dan project ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [1.7.0] - 2026-01-01
+
+### 🎨 Modern UI & Auth Integration Update
+
+### Added
+
+#### Home Screen Redesign
+- ✅ 🎨 Tampilan modern dengan background gradient dan ilustrasi 3D
+- ✅ 📱 Mobile-friendly layout dengan action buttons di bawah (reachable zone)
+- ✅ 🔒 Input validasi menggunakan Custom Modal Pop-up (menggantikan Alert bawaan)
+- ✅ ⌨️ Consolidated input fields untuk Nama dan PIN
+
+#### Authentication & Stats
+- ✅ 🏆 Leaderboard Integration: Menang/kalah tercatat otomatis di database
+- ✅ 📊 Stats Tracking: Record statistik untuk mode VS Bot dan Multiplayer
+- ✅ 🔐 Auto-fill data pemain di Lobby jika sudah login
+- ✅ 🛡️ Input disabled state untuk pemain yang sudah terautentikasi
+
+#### Web Compatibility
+- ✅ 🌐 Custom Leave Confirmation Modal untuk Online Game (support Web)
+- ✅ 🖱️ Perbaikan tombol Close yang sebelumnya tidak responsif di browser
+- ✅ 🔥 Host Logic: Room otomatis dihapus jika host keluar via modal
+
+### Changed
+- Replaced semua `Alert.alert` native dengan Custom Modal animasi
+- Moved "VS Bot" & "Multiplayer" buttons ke bottom sheet area
+- Updated Lobby UI untuk support auto-fill data dari gameStore
+- Refactored `OnlineGameScreen` untuk handle game end stats recording
+
+---
+
 ## [1.6.0] - 2025-01-01
 
 ### 🎵 Enhanced Audio & Visual Experience Update
