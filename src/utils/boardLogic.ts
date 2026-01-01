@@ -14,7 +14,7 @@ export const checkCollision = <T extends { id: string; position: number; name: s
   currentPlayerId: string
 ): CollisionEvent | null => {
   const bumpedPlayer = players.find(p => p.id !== currentPlayerId && p.position === position)
-  
+
   if (bumpedPlayer) {
     const newPosition = Math.max(1, bumpedPlayer.position - 2) // Move back 2 squares, minimum 1
     return {
@@ -24,7 +24,7 @@ export const checkCollision = <T extends { id: string; position: number; name: s
       bumpedToPosition: newPosition,
     }
   }
-  
+
   return null
 }
 
@@ -68,7 +68,7 @@ export const calculateNewPosition = (
   if (newPos > maxPosition) {
     const excess = newPos - maxPosition
     newPos = maxPosition - excess
-    
+
     // Check for snakes at bounce position
     if (snakes[newPos] !== undefined) {
       return {
@@ -205,7 +205,7 @@ export const createMoveEvent = (
   previousPosition: number,
   newPosition: number,
   diceRoll: number,
-  moveType: 'normal' | 'snake' | 'ladder' | 'bounce' | 'collision'
+  moveType: 'normal' | 'snake' | 'ladder' | 'bounce' | 'collision' | 'teleport'
 ): MoveEvent => {
   return {
     playerId,

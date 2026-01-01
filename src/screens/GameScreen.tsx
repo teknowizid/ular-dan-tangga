@@ -7,17 +7,19 @@ import {
   Alert,
   Modal,
   StatusBar,
+  ScrollView,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useGameStore } from '../store/gameStore'
 import GameBoard from '../components/GameBoard'
 import DiceRoller from '../components/DiceRoller'
 import GameEventModal from '../components/GameEventModal'
-import { checkWin } from '../utils/boardLogic'
-import { 
-  playGameStartSound, 
-  playTurnBellSound, 
-  playSnakeSound, 
+import { checkWin, calculateNewPosition } from '../utils/boardLogic'
+import { CUSTOM_BOARD_CONFIG } from '../config/boardConfig'
+import {
+  playGameStartSound,
+  playTurnBellSound,
+  playSnakeSound,
   playLadderSound,
   startGameBackgroundMusic,
   stopGameBackgroundMusic,
@@ -99,7 +101,21 @@ export default function GameScreen({ navigation }: GameScreenProps) {
   const [collisionInfo, setCollisionInfo] = useState<{ bumpedPlayerName: string; fromPosition: number; toPosition: number } | null>(null)
   const [showWinnerModal, setShowWinnerModal] = useState(false)
   const [winnerName, setWinnerName] = useState<string>('')
-  
+
+  // Power Ups State
+  const [shieldCharges, setShieldCharges] = useState(0)
+  const [shieldCooldownEnd, setShieldCooldownEnd] = useState(0)
+  const [customDiceCooldownEnd, setCustomDiceCooldownEnd] = useState(0)
+  const [teleportUsed, setTeleportUsed] = useState(false)
+  const [showCustomDiceModal, setShowCustomDiceModal] = useState(false)
+
+  // Timer refresh
+  const [, forceUpdate] = useState({})
+  useEffect(() => {
+    const interval = setInterval(() => forceUpdate({}), 1000)
+    return () => clearInterval(interval)
+  }, [])
+
   const {
     players,
     currentPlayerIndex,
@@ -111,6 +127,7 @@ export default function GameScreen({ navigation }: GameScreenProps) {
     moveHistory,
     hasBonusRoll,
     processMove,
+    teleportPlayer,
     endPlayerTurn,
     startGame,
     resetGame,
@@ -147,13 +164,13 @@ export default function GameScreen({ navigation }: GameScreenProps) {
       playWinnerSound() // Play winner celebration sound
       setWinnerName(winner.name)
       setShowWinnerModal(true)
-      
+
       // Save stats to database for all players
       const saveStats = async () => {
         for (const player of players) {
           // Skip bot players
           if (player.id.startsWith('bot-')) continue
-          
+
           const won = player.id === winner.id
           const playerMoves = moveHistory.filter(m => m.playerId === player.id).length
           await databaseService.updatePlayerStatsSimple(player.name, won, playerMoves)
@@ -174,6 +191,18 @@ export default function GameScreen({ navigation }: GameScreenProps) {
     setAnimating(true, playerId)
     const steps: number[] = []
     let currentPos = startPos
+
+    // Teleport or simple jump logic
+    if (diceRoll === 0) {
+      // Teleport animation (just wait then jump)
+      await new Promise(resolve => setTimeout(resolve, 500))
+      setAnimationPosition(endPos)
+      await new Promise(resolve => setTimeout(resolve, 500))
+      setAnimating(false, null)
+      onComplete()
+      return
+    }
+
     for (let i = 0; i < diceRoll; i++) {
       currentPos++
       if (currentPos <= 100) steps.push(currentPos)
@@ -191,12 +220,44 @@ export default function GameScreen({ navigation }: GameScreenProps) {
     onComplete()
   }
 
-  const handleDiceRoll = (result: number) => {
+  const handleDiceRoll = (result: number, isCustom = false) => {
     if (!currentPlayerId) return
     const player = players.find(p => p.id === currentPlayerId)
     if (!player) return
+
+    // Cooldown check for custom dice
+    if (isCustom) {
+      setCustomDiceCooldownEnd(Date.now() + 60000) // 60s cooldown
+    }
+
     const startPosition = player.position
-    const moveResult = processMove(currentPlayerId, result)
+
+    // Predict snake using helpers
+    const prediction = calculateNewPosition(
+      startPosition,
+      result,
+      CUSTOM_BOARD_CONFIG.snakes,
+      CUSTOM_BOARD_CONFIG.ladders
+    )
+
+    let ignoreSnakes = false
+    if (prediction.moveType === 'snake' && shieldCharges > 0) {
+      setShieldCharges(prev => {
+        const newVal = prev - 1
+        return newVal
+      })
+      ignoreSnakes = true
+      // Check cooldown after decrement? 
+      // Requirement: "delay 2 menit ketika sudah di gunakan". 
+      // If we depleted last charge:
+      if (shieldCharges === 1) { // 1 -> 0
+        setShieldCooldownEnd(Date.now() + 120000)
+      }
+      Alert.alert("🛡️ Perisai Aktif!", "Kamu berhasil menghindari ular!")
+    }
+
+    const moveResult = processMove(currentPlayerId, result, { ignoreSnakes })
+
     if (moveResult) {
       animateMovement(currentPlayerId, startPosition, moveResult.position, result, () => {
         // Handle collision first
@@ -219,14 +280,75 @@ export default function GameScreen({ navigation }: GameScreenProps) {
           setShowLadderModal(true)
         }
         else if (moveResult.moveType === 'bounce') setShowBounceModal(true)
-        
+
         if (checkWin(moveResult.position)) return
-        
+
         // Delay based on move type, collision gets extra time
         const delay = moveResult.collision ? 2500 : (moveResult.moveType !== 'normal' ? 2000 : 500)
         setTimeout(() => endPlayerTurn(), delay)
       })
     }
+  }
+
+  const handleActivateShield = () => {
+    if (Date.now() < shieldCooldownEnd) {
+      Alert.alert("Cooldown", "Perisai sedang pendinginan!")
+      return
+    }
+    // Activate
+    setShieldCharges(3)
+    // Requirement is "delay when used". If we interpret "Used" as "Activated", we could set cooldown now.
+    // But usually Shield provides N charges, then cooldown.
+    // If I click it, I get 3 charges.
+    // I can't click it again until invalid/cooldown.
+    setShieldCooldownEnd(Date.now() + 120000) // Set cooldown immediately upon activation, or after depletion? 
+    // "delay 2 menit ketika sudah di gunakan" -> "delay 2 mins when already used".
+    // I will interpret: You use the skill (activate), you get charges. You can't use skill again for 2 mins.
+    Alert.alert("Perisai Diaktifkan", "Kamu memiliki 3x ketahanan terhadap ular!")
+  }
+
+  const handleTeleport = () => {
+    if (teleportUsed) return
+    if (!currentPlayerId) return
+    if (!canRoll) return
+
+    // confirm
+    Alert.alert(
+      "Teleport 🚀",
+      "Pindah ke tangga terdekat di depanmu? Hanya bisa dipakai 1x.",
+      [
+        { text: "Batal", style: 'cancel' },
+        {
+          text: "Teleport",
+          onPress: () => {
+            const result = teleportPlayer(currentPlayerId)
+            if (!result) {
+              Alert.alert("Gagal", "Tidak ada tangga di depanmu!")
+              return
+            }
+            setTeleportUsed(true)
+            playLadderSound()
+
+            // Animate
+            const player = players.find(p => p.id === currentPlayerId)
+            animateMovement(currentPlayerId, player?.position || 1, result.position, 0, () => {
+              if (result.collision) {
+                // handle collision
+                setCollisionInfo({
+                  bumpedPlayerName: result.collision.bumpedPlayerName,
+                  fromPosition: result.collision.bumpedFromPosition,
+                  toPosition: result.collision.bumpedToPosition,
+                })
+                applyCollision(result.collision)
+                setShowCollisionModal(true)
+              }
+              if (checkWin(result.position)) return
+              setTimeout(() => endPlayerTurn(), 1000)
+            })
+          }
+        }
+      ]
+    )
   }
 
   useEffect(() => {
@@ -264,14 +386,14 @@ export default function GameScreen({ navigation }: GameScreenProps) {
             applyCollision(moveResult.collision)
             setShowCollisionModal(true)
           }
-          
+
           // Play sound effects for bot moves
           if (moveResult.moveType === 'snake') {
             playSnakeSound()
           } else if (moveResult.moveType === 'ladder') {
             playLadderSound()
           }
-          
+
           if (!checkWin(moveResult.position)) {
             const delay = moveResult.collision ? 2500 : 500
             setTimeout(() => endPlayerTurn(), delay)
@@ -281,21 +403,21 @@ export default function GameScreen({ navigation }: GameScreenProps) {
     }, 1500)
   }
 
-  const handlePauseGame = () => { 
+  const handlePauseGame = () => {
     pauseGameBackgroundMusic() // Pause game music
     pauseGame()
-    setShowPauseModal(true) 
+    setShowPauseModal(true)
   }
-  const handleResumeGame = () => { 
+  const handleResumeGame = () => {
     resumeGameBackgroundMusic() // Resume game music
     setShowPauseModal(false)
-    resumeGame() 
+    resumeGame()
   }
-  const handleQuitGame = () => { 
+  const handleQuitGame = () => {
     stopGameBackgroundMusic() // Stop game music
     setShowPauseModal(false)
     resetGame()
-    navigation.navigate('Home') 
+    navigation.navigate('Home')
   }
   const handleStartGame = () => {
     if (players.length < 2) { Alert.alert('Butuh Lebih Banyak Pemain', 'Minimal 2 pemain untuk memulai'); return }
@@ -306,12 +428,86 @@ export default function GameScreen({ navigation }: GameScreenProps) {
   const handlePlayAgain = () => {
     setShowWinModal(false)
     setShowWinnerModal(false)
+    // Reset powerups
+    setShieldCharges(0)
+    setShieldCooldownEnd(0)
+    setCustomDiceCooldownEnd(0)
+    setTeleportUsed(false)
+
     useGameStore.setState((state) => ({
       players: state.players.map((p, i) => ({ ...p, position: 1, isCurrentTurn: i === 0, diceResult: undefined })),
       currentPlayerIndex: 0, gameStatus: 'playing', winner: null, moveHistory: [], hasBonusRoll: false, lastCollision: null,
     }))
   }
   const handleExitGame = () => { setShowWinModal(false); setShowWinnerModal(false); resetGame(); navigation.navigate('Home') }
+
+  // Timers Format
+  const getCooldownText = (end: number) => {
+    const diff = Math.ceil((end - Date.now()) / 1000)
+    if (diff <= 0) return ''
+    return `${diff}s`
+  }
+
+  const renderPowerUps = () => {
+    if (!isMyTurn() || gameStatus !== 'playing') return null
+
+    const shieldReady = Date.now() > shieldCooldownEnd
+    const customDiceReady = Date.now() > customDiceCooldownEnd
+
+    return (
+      <View style={styles.powerUpsRow}>
+        {/* Custom Dice */}
+        <Pressable
+          style={[styles.powerUpBtn, !customDiceReady && styles.powerUpDisabled]}
+          onPress={() => {
+            if (customDiceReady && canRoll) setShowCustomDiceModal(true)
+          }}
+        >
+          <Text style={styles.powerUpIcon}>🎲</Text>
+          {customDiceReady ? (
+            <Text style={styles.powerUpLabel}>Pilih</Text>
+          ) : (
+            <Text style={styles.powerUpTimer}>{getCooldownText(customDiceCooldownEnd)}</Text>
+          )}
+        </Pressable>
+
+        {/* Shield */}
+        <Pressable
+          style={[styles.powerUpBtn, (!shieldReady && shieldCharges === 0) && styles.powerUpDisabled, shieldCharges > 0 && styles.powerUpActive]}
+          onPress={() => {
+            // Only allowing activation if ready and not already stacked?
+            // "delay 2 mins when USED". 
+            if (shieldReady && shieldCharges === 0) handleActivateShield()
+            else if (!shieldReady && shieldCharges === 0) Alert.alert("Pendinginan", `Tunggu ${getCooldownText(shieldCooldownEnd)}`)
+            else if (shieldCharges > 0) Alert.alert("Aktif", `Sisa ${shieldCharges}x tahan ular`)
+          }}
+        >
+          <Text style={styles.powerUpIcon}>🛡️</Text>
+          {shieldCharges > 0 ? (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{shieldCharges}</Text>
+            </View>
+          ) : (
+            !shieldReady && (
+              <Text style={styles.powerUpTimer}>{getCooldownText(shieldCooldownEnd)}</Text>
+            )
+          )}
+          <Text style={[styles.powerUpLabel, shieldCharges > 0 && { color: '#fff', fontWeight: 'bold' }]}>
+            {shieldCharges > 0 ? "Aktif" : "Anti Ular"}
+          </Text>
+        </Pressable>
+
+        {/* Teleport */}
+        <Pressable
+          style={[styles.powerUpBtn, teleportUsed && styles.powerUpDisabled]}
+          onPress={handleTeleport}
+        >
+          <Text style={styles.powerUpIcon}>🚀</Text>
+          <Text style={styles.powerUpLabel}>{teleportUsed ? "Habis" : "Teleport"}</Text>
+        </Pressable>
+      </View>
+    )
+  }
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -352,6 +548,9 @@ export default function GameScreen({ navigation }: GameScreenProps) {
         <GameBoard players={players} />
       </View>
 
+      {/* Power Ups (Floating or Row) */}
+      {renderPowerUps()}
+
       {/* Bottom Section - Dice & History */}
       <View style={styles.bottomSection}>
         {gameStatus === 'waiting' ? (
@@ -367,8 +566,8 @@ export default function GameScreen({ navigation }: GameScreenProps) {
           </View>
         ) : (
           <>
-            <DiceRoller 
-              onRoll={handleDiceRoll} 
+            <DiceRoller
+              onRoll={(v) => handleDiceRoll(v, false)}
               isDisabled={!canRoll}
               isMyTurn={canRoll && !isAnimating}
             />
@@ -380,6 +579,7 @@ export default function GameScreen({ navigation }: GameScreenProps) {
                   {lastMove.moveType === 'ladder' && ' 🪜'}
                   {lastMove.moveType === 'bounce' && ' ↩️'}
                   {lastMove.moveType === 'collision' && ' 💥'}
+                  {lastMove.moveType === 'teleport' && ' 🚀'}
                 </Text>
               </View>
             )}
@@ -426,7 +626,33 @@ export default function GameScreen({ navigation }: GameScreenProps) {
         </View>
       </Modal>
 
-      <Modal visible={showBotDiceModal} transparent animationType="fade" onRequestClose={() => {}}>
+      {/* Custom Dice Modal */}
+      <Modal visible={showCustomDiceModal} transparent animationType="fade" onRequestClose={() => setShowCustomDiceModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Pilih Angka Dadu</Text>
+            <View style={styles.diceGrid}>
+              {[1, 2, 3, 4, 5, 6].map(num => (
+                <Pressable
+                  key={num}
+                  style={styles.diceOption}
+                  onPress={() => {
+                    setShowCustomDiceModal(false)
+                    handleDiceRoll(num, true)
+                  }}
+                >
+                  <DiceFace value={num} />
+                </Pressable>
+              ))}
+            </View>
+            <Pressable style={[styles.modalButton, styles.exitButton, { marginTop: 16 }]} onPress={() => setShowCustomDiceModal(false)}>
+              <Text style={[styles.modalButtonText, styles.exitButtonText]}>Batal</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showBotDiceModal} transparent animationType="fade" onRequestClose={() => { }}>
         <View style={styles.modalOverlay}>
           <View style={styles.botDiceModalContent}>
             <Text style={styles.botDiceTitle}>🤖 {botName}</Text>
@@ -439,16 +665,16 @@ export default function GameScreen({ navigation }: GameScreenProps) {
       <GameEventModal visible={showSnakeModal} type="snake" onClose={() => setShowSnakeModal(false)} />
       <GameEventModal visible={showLadderModal} type="ladder" onClose={() => setShowLadderModal(false)} />
       <GameEventModal visible={showBounceModal} type="bounce" onClose={() => setShowBounceModal(false)} />
-      <GameEventModal 
-        visible={showCollisionModal} 
-        type="collision" 
+      <GameEventModal
+        visible={showCollisionModal}
+        type="collision"
         collisionInfo={collisionInfo || undefined}
-        onClose={() => setShowCollisionModal(false)} 
+        onClose={() => setShowCollisionModal(false)}
       />
-      <GameEventModal 
-        visible={showWinnerModal} 
-        type="winner" 
-        playerName={winnerName} 
+      <GameEventModal
+        visible={showWinnerModal}
+        type="winner"
+        playerName={winnerName}
         onPlayAgain={handlePlayAgain}
         onExit={handleExitGame}
       />
@@ -682,4 +908,75 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
     marginTop: 12,
   },
+  // Power Ups
+  powerUpsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    gap: 12,
+    backgroundColor: '#fff',
+  },
+  powerUpBtn: {
+    flex: 1,
+    alignItems: 'center',
+    padding: 8,
+    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    position: 'relative',
+    minHeight: 60,
+    justifyContent: 'center',
+  },
+  powerUpActive: {
+    backgroundColor: '#4CAF50',
+    borderColor: '#388E3C',
+  },
+  powerUpDisabled: {
+    opacity: 0.6,
+    backgroundColor: '#f9fafb',
+  },
+  powerUpIcon: {
+    fontSize: 20,
+    marginBottom: 4,
+  },
+  powerUpLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  powerUpTimer: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#E53935',
+  },
+  badge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: '#E53935',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  diceGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  diceOption: {
+    transform: [{ scale: 0.8 }],
+  }
 })

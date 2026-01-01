@@ -21,7 +21,7 @@ interface LobbyScreenProps {
 }
 
 export default function LobbyScreen({ navigation }: LobbyScreenProps) {
-  const { currentUser, user, isAuthenticated } = useGameStore()
+  const { currentUser, user, isAuthenticated, selectedBoard } = useGameStore()
   const [playerName, setPlayerName] = useState('')
   const [selectedAvatar, setSelectedAvatar] = useState(1)
   const [rooms, setRooms] = useState<OnlineRoom[]>([])
@@ -82,7 +82,8 @@ export default function LobbyScreen({ navigation }: LobbyScreenProps) {
       newRoomName.trim(),
       playerName.trim(),
       getAvatarColor(selectedAvatar),
-      selectedAvatar
+      selectedAvatar,
+      selectedBoard
     )
     setLoading(false)
 

@@ -3,12 +3,14 @@ import { View, Text, StyleSheet, Dimensions, useWindowDimensions, ImageBackgroun
 import { Player, STANDARD_BOARD } from '../types/game'
 import { useGameStore } from '../store/gameStore'
 import { CUSTOM_BOARD_CONFIG } from '../config/boardConfig'
+import { getBoardThemeById } from '../config/boardThemes'
 import SnakeDrawing from './SnakeDrawing'
 import LadderDrawing from './LadderDrawing'
 import PlayerToken from './PlayerToken'
 
 interface GameBoardProps {
   players: Player[]
+  boardTheme?: string // Optional prop for multiplayer
 }
 
 const BOARD_SIZE = 10
@@ -36,14 +38,14 @@ const getSquarePosition = (squareNumber: number, cellSize: number): { x: number;
   const adjustedNumber = squareNumber - 1
   const row = Math.floor(adjustedNumber / BOARD_SIZE)
   const col = adjustedNumber % BOARD_SIZE
-  
+
   // Snake pattern - alternate direction each row
   const actualCol = row % 2 === 0 ? col : (BOARD_SIZE - 1) - col
-  
+
   // Y is inverted because row 0 is at bottom
   const x = actualCol * cellSize + cellSize / 2
   const y = (BOARD_SIZE - 1 - row) * cellSize + cellSize / 2
-  
+
   return { x, y }
 }
 
@@ -59,10 +61,15 @@ const getSquareNumber = (row: number, col: number): number => {
 /**
  * GameBoard component - 10x10 board with snakes, ladders, and player tokens
  */
-export default function GameBoard({ players }: GameBoardProps) {
-  const { isAnimating, animatingPlayerId, animationPosition } = useGameStore()
+export default function GameBoard({ players, boardTheme: propBoardTheme }: GameBoardProps) {
+  const { isAnimating, animatingPlayerId, animationPosition, selectedBoard } = useGameStore()
   const { width: screenWidth, height: screenHeight } = useWindowDimensions()
-  
+
+  // Use prop if available (for multiplayer), otherwise use store selection (local)
+  const themeId = propBoardTheme || selectedBoard
+  const boardTheme = getBoardThemeById(themeId)
+
+
   // Calculate responsive board size - fit in available space
   const maxBoardWidth = screenWidth - 24
   const maxBoardHeight = screenHeight - 280 // Leave space for header, dice, etc
@@ -80,17 +87,17 @@ export default function GameBoard({ players }: GameBoardProps) {
   // Generate invisible overlay squares for player positioning
   const renderOverlaySquares = () => {
     const squares = []
-    
+
     for (let row = 0; row < BOARD_SIZE; row++) {
       for (let col = 0; col < BOARD_SIZE; col++) {
         const squareNum = getSquareNumber(row, col)
         const isWinSquare = squareNum === 100
-        
+
         // Get players on this square (considering animation position)
         const playersOnSquare = players.filter(
           (p) => getPlayerDisplayPosition(p) === squareNum
         )
-        
+
         squares.push(
           <View
             key={`${row}-${col}`}
@@ -106,12 +113,12 @@ export default function GameBoard({ players }: GameBoardProps) {
             {/* <Text style={[styles.debugNumber, { fontSize: CELL_SIZE * 0.2 }]}>
               {squareNum}
             </Text> */}
-            
+
             {/* Win square trophy */}
             {isWinSquare && (
               <Text style={[styles.trophy, { fontSize: CELL_SIZE * 0.5 }]}>🏆</Text>
             )}
-            
+
             {/* Players on this square */}
             {playersOnSquare.map((player, index) => (
               <View
@@ -135,7 +142,7 @@ export default function GameBoard({ players }: GameBoardProps) {
         )
       }
     }
-    
+
     return squares
   }
 
@@ -146,7 +153,7 @@ export default function GameBoard({ players }: GameBoardProps) {
         <View style={styles.boardContainer}>
           {/* Board background image */}
           <ImageBackground
-            source={require('../../assets/board.png')}
+            source={boardTheme.image}
             style={[styles.boardBackground, { width: BOARD_WIDTH, height: BOARD_WIDTH }]}
             resizeMode="cover"
           >
@@ -155,7 +162,7 @@ export default function GameBoard({ players }: GameBoardProps) {
               {renderOverlaySquares()}
             </View>
           </ImageBackground>
-          
+
           {/* Snakes overlay */}
           {SNAKES_VISUAL.map((snake, index) => {
             const headPos = getSquarePosition(snake.head, CELL_SIZE)
@@ -174,7 +181,7 @@ export default function GameBoard({ players }: GameBoardProps) {
               </View>
             )
           })}
-          
+
           {/* Ladders overlay */}
           {LADDERS_VISUAL.map((ladder, index) => {
             const bottomPos = getSquarePosition(ladder.bottom, CELL_SIZE)

@@ -6,6 +6,31 @@ Format berdasarkan [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 dan project ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [1.8.0] - 2026-01-01
+
+### 🎨 Dynamic Theme & Power Ups Update
+
+### Added
+
+#### Dynamic Board Theme
+- ✅ 🖼️ Pilihan tema papan permainan: Default (Jungle), Dark Mode, Classic (White), Ocean, Space, Sunset
+- ✅ 🧩 `BoardPicker` component di Home dan Lobby untuk memilih tema visual
+- ✅ 🔄 Tema terpilih tersinkronisasi di game lokal (VS Bot)
+- ✅ 🌐 Tema tersinkronisasi di Multiplayer: Player lain otomatis melihat tema yang dipilih host
+- ✅ 💾 Integrasi Backend: Kolom `board_theme` di table `game_rooms`
+
+#### Power Ups (VS Bot Mode)
+- ✅ 🛡️ **Snake Turn Shield**: Anti ular! Bisa menahan ular 3x (Cooldown 2 menit)
+- ✅ 🎲 **Custom Dice**: Pilih angka dadu 1-6 sesuai keinginan (Cooldown 1 menit)
+- ✅ 🚀 **Teleport**: Instan pindah ke puncak tangga terdekat (Limit 1x per game)
+- ✅ ⚡ UI Power Ups dengan timer cooldown real-time dan feedback visual
+
+### Changed
+- Refactored `multiplayerService` untuk support board theme persistence
+- Updated `GameBoard` component untuk render background image dinamis berdasarkan props/store
+
+---
+
 ## [1.7.0] - 2026-01-01
 
 ### 🎨 Modern UI & Auth Integration Update
@@ -386,6 +411,8 @@ Rilis pertama Snake & Ladder Game dengan fitur lengkap untuk single player dan m
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 1.8.0 | 2026-01-01 | Dynamic Board Themes & VS Bot Power Ups (Shield, Custom Dice, Teleport) |
+| 1.7.0 | 2026-01-01 | Modern UI Redesign, Auth Integration, Stats Tracking |
 | 1.6.0 | 2025-01-01 | Enhanced audio system, custom board, glassmorphism effects |
 | 1.5.0 | 2024-12-31 | Splash screen on app launch |
 | 1.4.0 | 2024-12-31 | Bonus roll 6, collision/tabrakan feature |

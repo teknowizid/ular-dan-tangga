@@ -27,6 +27,7 @@ import {
   isBackgroundMusicPlaying,
 } from '../utils/soundUtils'
 import AvatarPicker from '../components/AvatarPicker'
+import BoardPicker from '../components/BoardPicker'
 
 interface HomeScreenProps {
   navigation: any
@@ -47,7 +48,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const [alertConfig, setAlertConfig] = useState({ title: '', message: '' })
   const scaleAnim = useRef(new Animated.Value(0)).current
 
-  const { createGameRoom, login, isAuthenticated, currentUser, user } = useGameStore()
+  const { createGameRoom, login, isAuthenticated, currentUser, user, selectedBoard, setSelectedBoard } = useGameStore()
 
   // Custom Alert Helper
   const showCustomAlert = (title: string, message: string) => {
@@ -155,7 +156,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       `Game-${Date.now().toString(36)}`,
       playerName.trim(),
       getAvatarColor(selectedAvatar),
-      selectedAvatar
+      selectedAvatar,
+      selectedBoard
     )
     navigation.navigate('Game')
   }
@@ -267,6 +269,13 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                 if (!isAuthenticated) setSelectedAvatar(av)
               }}
               size="medium"
+            />
+
+            <View style={styles.divider} />
+
+            <BoardPicker
+              selectedBoard={selectedBoard}
+              onSelect={setSelectedBoard}
             />
           </View>
         </ScrollView>

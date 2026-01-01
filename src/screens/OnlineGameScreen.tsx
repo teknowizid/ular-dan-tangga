@@ -352,7 +352,7 @@ export default function OnlineGameScreen({ navigation, route }: OnlineGameScreen
 
       {/* Game Board - Flex to fill available space */}
       <View style={styles.boardContainer}>
-        <GameBoard players={gamePlayers} />
+        <GameBoard players={gamePlayers} boardTheme={room.boardTheme} />
       </View>
 
       {/* Bottom Section - Dice & History */}

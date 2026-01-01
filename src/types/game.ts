@@ -34,6 +34,7 @@ export interface GameRoom {
   winner?: Player
   createdAt: Date
   updatedAt: Date
+  boardTheme?: string
 }
 
 /**
@@ -46,7 +47,7 @@ export interface MoveEvent {
   newPosition: number
   diceRoll: number
   timestamp: Date
-  moveType: 'normal' | 'snake' | 'ladder' | 'bounce' | 'collision'
+  moveType: 'normal' | 'snake' | 'ladder' | 'bounce' | 'collision' | 'teleport'
 }
 
 /**
@@ -85,7 +86,7 @@ export interface GameUpdatePayload {
  */
 export interface MoveResult {
   position: number
-  moveType: 'normal' | 'snake' | 'ladder' | 'bounce' | 'collision'
+  moveType: 'normal' | 'snake' | 'ladder' | 'bounce' | 'collision' | 'teleport'
 }
 
 /**

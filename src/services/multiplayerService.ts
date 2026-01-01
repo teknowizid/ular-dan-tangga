@@ -10,6 +10,7 @@ export interface OnlineRoom {
   currentPlayers: number
   maxPlayers: number
   createdAt: Date
+  boardTheme?: string
 }
 
 export interface OnlinePlayer {
@@ -41,16 +42,16 @@ class MultiplayerService {
   private startHeartbeat(playerId: string): void {
     // Clear any existing heartbeat
     this.stopHeartbeat()
-    
+
     this.currentPlayerId = playerId
-    
+
     // Send heartbeat every 30 seconds
     this.heartbeatInterval = setInterval(async () => {
       if (this.currentPlayerId) {
         await this.sendHeartbeat(this.currentPlayerId)
       }
     }, 30000)
-    
+
     // Send initial heartbeat
     this.sendHeartbeat(playerId)
   }
@@ -82,11 +83,15 @@ class MultiplayerService {
   /**
    * Create a new game room
    */
-  async createRoom(roomName: string, hostName: string, hostColor: string, avatar: number = 1): Promise<{ room: OnlineRoom; player: OnlinePlayer } | null> {
+  async createRoom(roomName: string, hostName: string, hostColor: string, avatar: number = 1, boardTheme: string = 'default'): Promise<{ room: OnlineRoom; player: OnlinePlayer } | null> {
     try {
       // Create room using function
       const { data: roomData, error: roomError } = await supabase
-        .rpc('create_game_room', { p_name: roomName, p_host_name: hostName })
+        .rpc('create_game_room', {
+          p_name: roomName,
+          p_host_name: hostName,
+          p_board_theme: boardTheme
+        })
 
       if (roomError || !roomData || roomData.length === 0) {
         console.error('Error creating room:', roomError)
@@ -124,6 +129,7 @@ class MultiplayerService {
         currentPlayers: 1,
         maxPlayers: 4,
         createdAt: new Date(),
+        boardTheme: boardTheme
       }
 
       const player: OnlinePlayer = {
@@ -221,6 +227,7 @@ class MultiplayerService {
         currentPlayers: roomData.current_players + 1,
         maxPlayers: roomData.max_players,
         createdAt: new Date(roomData.created_at),
+        boardTheme: roomData.board_theme // Ensure theme connects if user joins
       }
 
       const player: OnlinePlayer = {
@@ -283,6 +290,7 @@ class MultiplayerService {
         currentPlayers: room.current_players,
         maxPlayers: room.max_players,
         createdAt: new Date(room.created_at),
+        boardTheme: room.board_theme // Map board theme
       }))
     } catch (error) {
       console.error('Error in getAvailableRooms:', error)
@@ -348,8 +356,8 @@ class MultiplayerService {
     try {
       const { error } = await supabase
         .from('game_rooms')
-        .update({ 
-          status: 'playing', 
+        .update({
+          status: 'playing',
           started_at: new Date().toISOString(),
           last_activity: new Date().toISOString()
         })
@@ -461,7 +469,7 @@ class MultiplayerService {
 
       if (!error) {
         await this.broadcastUpdate({ type: 'game_ended', data: { winnerName } })
-        
+
         // Auto-delete room after 5 seconds
         setTimeout(() => {
           this.deleteRoom(roomId)
@@ -546,18 +554,18 @@ class MultiplayerService {
     try {
       // Delete move history first (foreign key constraint)
       await supabase.from('move_history').delete().eq('room_id', roomId)
-      
+
       // Delete all players in room
       await supabase.from('game_players').delete().eq('room_id', roomId)
-      
+
       // Delete the room
       const { error } = await supabase.from('game_rooms').delete().eq('id', roomId)
-      
+
       if (error) {
         console.error('Error deleting room:', error)
         return false
       }
-      
+
       console.log('Room deleted:', roomId)
       return true
     } catch (error) {
@@ -575,7 +583,7 @@ class MultiplayerService {
 
       // 1. Cleanup stale players (inactive for more than 2 minutes)
       const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString()
-      
+
       const { data: stalePlayers } = await supabase
         .from('game_players')
         .select('id, room_id')
@@ -583,10 +591,10 @@ class MultiplayerService {
 
       if (stalePlayers && stalePlayers.length > 0) {
         console.log(`Found ${stalePlayers.length} stale players to cleanup`)
-        
+
         // Get unique room IDs
         const roomIds = [...new Set(stalePlayers.map(p => p.room_id))]
-        
+
         // Delete stale players
         await supabase
           .from('game_players')
@@ -601,7 +609,7 @@ class MultiplayerService {
             .eq('room_id', roomId)
 
           const count = remainingPlayers?.length || 0
-          
+
           if (count === 0) {
             // Delete empty room
             await this.deleteRoom(roomId)
@@ -643,7 +651,7 @@ class MultiplayerService {
 
       // 4. Delete waiting rooms with no activity for 10 minutes
       const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString()
-      
+
       const { data: staleWaitingRooms } = await supabase
         .from('game_rooms')
         .select('id')

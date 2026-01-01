@@ -1,12 +1,13 @@
 import { supabase } from '../config/supabase'
 import { create } from 'zustand'
-import { Player, GameRoom, MoveEvent, STANDARD_BOARD, CollisionEvent } from '../types/game'
+import { Player, GameRoom, MoveEvent, CollisionEvent } from '../types/game'
 import { authService, RegisteredUser } from '../services/authService'
 import { CUSTOM_BOARD_CONFIG } from '../config/boardConfig'
 import { calculateNewPosition, getNextPlayer, checkWin, createMoveEvent, checkCollision } from '../utils/boardLogic'
 
 interface GameStore {
   // State
+  selectedBoard: string
   currentRoom: GameRoom | null
   players: Player[]
   moveHistory: MoveEvent[]
@@ -19,8 +20,8 @@ interface GameStore {
   winner: Player | null
   currentSession: any
   currentPlayerId: string | null
-  hasBonusRoll: boolean // Track if player rolled 6 and gets bonus roll
-  lastCollision: CollisionEvent | null // Track last collision event
+  hasBonusRoll: boolean
+  lastCollision: CollisionEvent | null
 
   // Auth
   user: any
@@ -28,11 +29,12 @@ interface GameStore {
   isAuthenticated: boolean
 
   // Actions
+  setSelectedBoard: (boardId: string) => void
   updateStats: (isWin: boolean, moves: number) => Promise<void>
   login: (username: string, pin: string, avatar: number) => Promise<{ success: boolean; error?: string }>
   initializeAuth: (session: any) => void
   setCurrentPlayerId: (playerId: string) => void
-  createGameRoom: (roomName: string, playerName: string, playerColor: string, avatar?: number) => void
+  createGameRoom: (roomName: string, playerName: string, playerColor: string, avatar?: number, boardTheme?: string) => void
   joinGameRoom: (roomId: string, playerName: string, playerColor: string, avatar?: number) => void
   startGame: () => void
   resetGame: () => void
@@ -45,7 +47,8 @@ interface GameStore {
   applyCollision: (collision: CollisionEvent) => void
 
   // Game Actions
-  processMove: (playerId: string, diceRoll: number) => { position: number; moveType: string; collision?: CollisionEvent | null } | null
+  processMove: (playerId: string, diceRoll: number, options?: { ignoreSnakes?: boolean }) => { position: number; moveType: string; collision?: CollisionEvent | null } | null
+  teleportPlayer: (playerId: string) => { position: number; collision?: CollisionEvent | null } | null
   endPlayerTurn: () => void
   recordMove: (move: MoveEvent) => void
 
@@ -75,6 +78,7 @@ interface GameStore {
 
 export const useGameStore = create<GameStore>((set, get) => ({
   // Initial state
+  selectedBoard: 'default',
   currentRoom: null,
   players: [],
   moveHistory: [],
@@ -93,10 +97,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
   currentUser: null,
   isAuthenticated: false,
 
+  setSelectedBoard: (boardId) => set({ selectedBoard: boardId }),
+
   // Auth
   updateStats: async (isWin, moves) => {
     const state = get()
-    if (!state.currentUser && !state.user?.email) return // Only for logged in users
+    if (!state.currentUser && !state.user?.email) return
 
     const playerName = state.currentUser?.username || state.user?.email
 
@@ -119,13 +125,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
       set({
         currentUser: user,
         isAuthenticated: true,
-        // Also update standard user field for compatibility
         user: { id: user.id, email: user.username }
       })
       return { success: true }
     }
     return { success: false, error: error || 'Login gagal' }
   },
+
   initializeAuth: (session) => {
     set({
       currentSession: session,
@@ -139,12 +145,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   // Create room
-  createGameRoom: (roomName, playerName, playerColor, avatar = 1) => {
+  createGameRoom: (roomName, playerName, playerColor, avatar = 1, boardTheme = 'default') => {
     const state = get()
-    // Use authenticated ID if available, otherwise random
     const playerId = state.currentUser ? state.currentUser.id : `player-${Date.now()}`
-
-    // Use authenticated name if available (though passed arg should match)
     const finalName = state.currentUser ? state.currentUser.username : playerName
 
     const newPlayer: Player = {
@@ -165,6 +168,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       status: 'waiting',
       createdAt: new Date(),
       updatedAt: new Date(),
+      boardTheme: boardTheme
     }
 
     set({
@@ -173,6 +177,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       currentPlayerIndex: 0,
       currentPlayerId: playerId,
       gameStatus: 'waiting',
+      selectedBoard: boardTheme,
     })
   },
 
@@ -207,7 +212,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
   },
 
-  // Start game
   startGame: () => {
     const state = get()
     if (state.players.length < 2) return
@@ -227,7 +231,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
     })
   },
 
-  // Reset game
   resetGame: () => {
     set({
       currentRoom: null,
@@ -243,7 +246,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
     })
   },
 
-  // Pause game
   pauseGame: () => {
     const state = get()
     if (state.gameStatus === 'playing') {
@@ -251,7 +253,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
   },
 
-  // Resume game
   resumeGame: () => {
     const state = get()
     if (state.gameStatus === 'playing' && state.isPaused) {
@@ -259,27 +260,22 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
   },
 
-  // Set animating state
   setAnimating: (isAnimating, playerId = null) => {
     set({ isAnimating, animatingPlayerId: playerId })
   },
 
-  // Set animation position
   setAnimationPosition: (position) => {
     set({ animationPosition: position })
   },
 
-  // Set bonus roll state
   setHasBonusRoll: (hasBonusRoll) => {
     set({ hasBonusRoll })
   },
 
-  // Set last collision
   setLastCollision: (collision) => {
     set({ lastCollision: collision })
   },
 
-  // Apply collision - move bumped player back 2 squares
   applyCollision: (collision) => {
     set((state) => ({
       players: state.players.map((p) =>
@@ -290,8 +286,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }))
   },
 
-  // Process move
-  processMove: (playerId, diceRoll) => {
+  processMove: (playerId, diceRoll, options = {}) => {
     const state = get()
     const player = state.players.find((p) => p.id === playerId)
 
@@ -300,21 +295,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const result = calculateNewPosition(
       player.position,
       diceRoll,
-      CUSTOM_BOARD_CONFIG.snakes,
+      options.ignoreSnakes ? {} : CUSTOM_BOARD_CONFIG.snakes,
       CUSTOM_BOARD_CONFIG.ladders
     )
 
-    // Check for collision with other players
     const collision = checkCollision(result.position, state.players, playerId)
 
-    // Update player position
     const updatedPlayers = state.players.map((p) =>
       p.id === playerId
         ? { ...p, position: result.position, diceResult: diceRoll }
         : p
     )
 
-    // Set bonus roll if dice is 6
     const hasBonusRoll = diceRoll === 6
 
     set({
@@ -323,16 +315,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
       lastCollision: collision,
     })
 
-    // Check win
     if (checkWin(result.position)) {
       set({
         gameStatus: 'finished',
         winner: { ...player, position: result.position },
-        hasBonusRoll: false, // No bonus roll if won
+        hasBonusRoll: false,
       })
     }
 
-    // Record move
     const moveEvent = createMoveEvent(
       playerId,
       player.name,
@@ -348,15 +338,63 @@ export const useGameStore = create<GameStore>((set, get) => ({
     return { ...result, collision }
   },
 
-  // End turn - check for bonus roll first
+  teleportPlayer: (playerId) => {
+    const state = get()
+    const player = state.players.find((p) => p.id === playerId)
+    if (!player) return null
+
+    // Find nearest ladder ahead
+    const ladders = CUSTOM_BOARD_CONFIG.ladders
+    const sortedLadderBottoms = Object.keys(ladders).map(Number).sort((a, b) => a - b)
+    const nextLadderBottom = sortedLadderBottoms.find(b => b > player.position)
+
+    if (!nextLadderBottom) return null
+
+    const targetPos = ladders[nextLadderBottom]
+    const collision = checkCollision(targetPos, state.players, playerId)
+
+    const updatedPlayers = state.players.map((p) =>
+      p.id === playerId
+        ? { ...p, position: targetPos, diceResult: 0 }
+        : p
+    )
+
+    set({
+      players: updatedPlayers,
+      hasBonusRoll: false,
+      lastCollision: collision,
+    })
+
+    if (checkWin(targetPos)) {
+      set({
+        gameStatus: 'finished',
+        winner: { ...player, position: targetPos },
+        hasBonusRoll: false,
+      })
+    }
+
+    const moveEvent = createMoveEvent(
+      playerId,
+      player.name,
+      player.position,
+      targetPos,
+      0,
+      'teleport'
+    )
+    set((state) => ({
+      moveHistory: [...state.moveHistory, moveEvent],
+    }))
+
+    return { position: targetPos, collision }
+  },
+
   endPlayerTurn: () => {
     const state = get()
     if (state.gameStatus !== 'playing') return
 
-    // If player has bonus roll (rolled 6), don't switch turn
     if (state.hasBonusRoll) {
-      set({ hasBonusRoll: false }) // Reset bonus roll flag
-      return // Stay on same player's turn
+      set({ hasBonusRoll: false })
+      return
     }
 
     const nextIndex = getNextPlayer(state.currentPlayerIndex, state.players.length)
@@ -372,14 +410,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
     })
   },
 
-  // Record move
   recordMove: (move) => {
     set((state) => ({
       moveHistory: [...state.moveHistory, move],
     }))
   },
 
-  // Update position
   updatePlayerPosition: (playerId, newPosition) => {
     set((state) => ({
       players: state.players.map((p) =>
@@ -388,7 +424,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }))
   },
 
-  // Update turn
   updateCurrentTurn: (playerIndex) => {
     set((state) => ({
       currentPlayerIndex: playerIndex,
@@ -399,22 +434,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }))
   },
 
-  // Set status
   setGameStatus: (status) => {
     set({ gameStatus: status })
   },
 
-  // Set winner
   setWinner: (player) => {
     set({ winner: player, gameStatus: 'finished' })
   },
 
-  // Set players
   setPlayers: (players) => {
     set({ players })
   },
 
-  // Realtime handlers
   handleRemotePlayerMove: (playerId, playerName, previousPos, newPos, diceRoll, moveType) => {
     set((state) => ({
       players: state.players.map((p) =>
@@ -434,10 +465,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
           moveType: moveType as 'normal' | 'snake' | 'ladder' | 'bounce' | 'collision',
         },
       ],
-      hasBonusRoll: diceRoll === 6, // Set bonus roll for remote player too
+      hasBonusRoll: diceRoll === 6,
     }))
 
-    // Check if remote player won
     if (checkWin(newPos)) {
       const winner = get().players.find((p) => p.id === playerId)
       if (winner) {
@@ -466,7 +496,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }))
   },
 
-  // Getters
   getCurrentPlayer: () => {
     const state = get()
     return state.players[state.currentPlayerIndex] || null
