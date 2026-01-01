@@ -13,7 +13,7 @@ import GameBoard from '../components/GameBoard'
 import DiceRoller from '../components/DiceRoller'
 import GameEventModal from '../components/GameEventModal'
 import { checkWin } from '../utils/boardLogic'
-import { playGameStartSound } from '../utils/soundUtils'
+import { playGameStartSound, playTurnBellSound } from '../utils/soundUtils'
 import { CollisionEvent } from '../types/game'
 import { databaseService } from '../services/databaseService'
 

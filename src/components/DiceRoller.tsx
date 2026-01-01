@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { View, Text, Pressable, StyleSheet, Animated, Platform, Modal } from 'react-native'
 import { Audio } from 'expo-av'
+import { playTurnBellSound } from '../utils/soundUtils'
 
 interface DiceRollerProps {
   onRoll: (result: number) => void
@@ -94,6 +95,9 @@ export default function DiceRoller({ onRoll, isDisabled = false, isMyTurn = fals
   // Blinking animation when it's player's turn
   useEffect(() => {
     if (isMyTurn && !isDisabled && !isRolling) {
+      // Play bell sound when it becomes player's turn
+      playTurnBellSound()
+      
       // Start blinking animation
       const blinkAnimation = Animated.loop(
         Animated.sequence([

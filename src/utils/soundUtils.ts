@@ -117,3 +117,24 @@ export const playGameStartSound = async () => {
     console.log('Error playing game start sound:', error)
   }
 }
+
+/**
+ * Play turn bell sound effect when it's player's turn
+ */
+export const playTurnBellSound = async () => {
+  try {
+    const { sound } = await Audio.Sound.createAsync(
+      require('../../assets/sound/bell-turn.mp3'),
+      { volume: 0.8 } // Slightly lower volume for bell
+    )
+    await sound.playAsync()
+    // Unload after playing
+    sound.setOnPlaybackStatusUpdate((status) => {
+      if (status.isLoaded && status.didJustFinish) {
+        sound.unloadAsync()
+      }
+    })
+  } catch (error) {
+    console.log('Error playing turn bell sound:', error)
+  }
+}

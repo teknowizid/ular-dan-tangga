@@ -15,7 +15,7 @@ import { multiplayerService, OnlineRoom, OnlinePlayer, GameUpdate } from '../ser
 import { calculateNewPosition, checkWin } from '../utils/boardLogic'
 import { STANDARD_BOARD, Player } from '../types/game'
 import { CUSTOM_BOARD_CONFIG } from '../config/boardConfig'
-import { playGameStartSound } from '../utils/soundUtils'
+import { playGameStartSound, playTurnBellSound } from '../utils/soundUtils'
 
 interface OnlineGameScreenProps {
   navigation: any
