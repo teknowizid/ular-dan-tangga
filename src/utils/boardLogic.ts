@@ -1,4 +1,5 @@
 import { MoveEvent, MoveResult, ValidationResult, STANDARD_BOARD, CollisionEvent } from '../types/game'
+import { CUSTOM_BOARD_CONFIG } from '../config/boardConfig'
 
 /**
  * Check if landing on a position causes a collision with another player
@@ -57,8 +58,8 @@ export const checkCollision = <T extends { id: string; position: number; name: s
 export const calculateNewPosition = (
   currentPosition: number,
   diceRoll: number,
-  snakes: Record<number, number> = STANDARD_BOARD.snakes,
-  ladders: Record<number, number> = STANDARD_BOARD.ladders,
+  snakes: Record<number, number> = CUSTOM_BOARD_CONFIG.snakes,
+  ladders: Record<number, number> = CUSTOM_BOARD_CONFIG.ladders,
   maxPosition: number = 100
 ): MoveResult => {
   let newPos = currentPosition + diceRoll
@@ -257,8 +258,8 @@ export const getSquarePosition = (
  */
 export const generateBoardSquares = (
   boardSize: number = 100,
-  snakes: Record<number, number> = STANDARD_BOARD.snakes,
-  ladders: Record<number, number> = STANDARD_BOARD.ladders
+  snakes: Record<number, number> = CUSTOM_BOARD_CONFIG.snakes,
+  ladders: Record<number, number> = CUSTOM_BOARD_CONFIG.ladders
 ): Array<{ number: number; isSnakeHead: boolean; isLadderBottom: boolean }> => {
   const squares = []
   for (let i = 1; i <= boardSize; i++) {

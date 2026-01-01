@@ -2,6 +2,7 @@ import React from 'react'
 import { View, Text, StyleSheet, Dimensions, useWindowDimensions, ImageBackground } from 'react-native'
 import { Player, STANDARD_BOARD } from '../types/game'
 import { useGameStore } from '../store/gameStore'
+import { CUSTOM_BOARD_CONFIG } from '../config/boardConfig'
 import SnakeDrawing from './SnakeDrawing'
 import LadderDrawing from './LadderDrawing'
 import PlayerToken from './PlayerToken'
@@ -16,13 +17,13 @@ const BOARD_SIZE = 10
 const SNAKE_COLORS = ['#3B82F6', '#EF4444', '#F59E0B', '#EC4899', '#3B82F6']
 
 // Snake and ladder positions with their visual data
-const SNAKES_VISUAL = Object.entries(STANDARD_BOARD.snakes).map(([head, tail], index) => ({
+const SNAKES_VISUAL = Object.entries(CUSTOM_BOARD_CONFIG.snakes).map(([head, tail], index) => ({
   head: parseInt(head),
   tail: tail,
   color: SNAKE_COLORS[index % SNAKE_COLORS.length],
 }))
 
-const LADDERS_VISUAL = Object.entries(STANDARD_BOARD.ladders).map(([bottom, top]) => ({
+const LADDERS_VISUAL = Object.entries(CUSTOM_BOARD_CONFIG.ladders).map(([bottom, top]) => ({
   bottom: parseInt(bottom),
   top: top,
 }))
@@ -101,6 +102,11 @@ export default function GameBoard({ players }: GameBoardProps) {
               },
             ]}
           >
+            {/* Square number for debugging - uncomment to see numbers */}
+            <Text style={[styles.debugNumber, { fontSize: CELL_SIZE * 0.2 }]}>
+              {squareNum}
+            </Text>
+            
             {/* Win square trophy */}
             {isWinSquare && (
               <Text style={[styles.trophy, { fontSize: CELL_SIZE * 0.5 }]}>🏆</Text>
@@ -230,6 +236,14 @@ const styles = StyleSheet.create({
     padding: 1,
     position: 'relative',
     backgroundColor: 'transparent', // Invisible overlay
+  },
+  debugNumber: {
+    fontWeight: 'bold',
+    color: '#FF0000',
+    backgroundColor: 'rgba(255,255,255,0.8)',
+    paddingHorizontal: 2,
+    borderRadius: 2,
+    textAlign: 'center',
   },
   trophy: {
     position: 'absolute',
