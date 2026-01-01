@@ -6,10 +6,10 @@ import {
   Pressable,
   StyleSheet,
   Alert,
-  SafeAreaView,
   StatusBar,
   Dimensions,
 } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Audio } from 'expo-av'
 import { useGameStore } from '../store/gameStore'
 import { AVATAR_COLORS } from '../types/game'
@@ -28,6 +28,7 @@ const isSmallScreen = SCREEN_HEIGHT < 700
  * Redesigned for single-screen layout without scrolling
  */
 export default function HomeScreen({ navigation }: HomeScreenProps) {
+  const insets = useSafeAreaInsets()
   const [playerName, setPlayerName] = useState('')
   const [selectedAvatar, setSelectedAvatar] = useState(1)
   const [isMusicOn, setIsMusicOn] = useState(true)
@@ -91,8 +92,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f0f4f8" />
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <StatusBar barStyle="dark-content" backgroundColor="#f0f4f8" translucent={false} />
       
       {/* Header */}
       <View style={styles.header}>
@@ -171,7 +172,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           <Text style={styles.ruleItem}>🏆 Sampai 100!</Text>
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   )
 }
 

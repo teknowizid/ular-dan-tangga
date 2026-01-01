@@ -7,17 +7,18 @@ import {
   Alert,
   Modal,
   Share,
+  StatusBar,
 } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import GameBoard from '../components/GameBoard'
 import DiceRoller from '../components/DiceRoller'
 import GameEventModal from '../components/GameEventModal'
 import { multiplayerService, OnlineRoom, OnlinePlayer, GameUpdate } from '../services/multiplayerService'
 import { calculateNewPosition, checkWin } from '../utils/boardLogic'
-import { STANDARD_BOARD, Player } from '../types/game'
+import { Player } from '../types/game'
 import { CUSTOM_BOARD_CONFIG } from '../config/boardConfig'
 import { 
   playGameStartSound, 
-  playTurnBellSound, 
   playSnakeSound, 
   playLadderSound,
   startGameBackgroundMusic,
@@ -39,6 +40,7 @@ interface OnlineGameScreenProps {
 
 export default function OnlineGameScreen({ navigation, route }: OnlineGameScreenProps) {
   const { room: initialRoom, player: myPlayer, isHost } = route.params
+  const insets = useSafeAreaInsets()
 
   const [room] = useState<OnlineRoom>(initialRoom)
   const [players, setPlayers] = useState<OnlinePlayer[]>(route.params.players || [myPlayer])
@@ -238,7 +240,7 @@ export default function OnlineGameScreen({ navigation, route }: OnlineGameScreen
       setPlayers((prev) =>
         prev.map((p, i) => ({ ...p, isCurrentTurn: i === nextIndex }))
       )
-    }, 1500)
+    }, modalDelay)
   }
 
   const animateMovement = async (playerId: string, from: number, to: number) => {
@@ -300,105 +302,70 @@ export default function OnlineGameScreen({ navigation, route }: OnlineGameScreen
   const currentPlayer = gamePlayers[currentTurnIndex]
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <StatusBar barStyle="light-content" backgroundColor="#4CAF50" translucent={false} />
+      {/* Compact Header */}
       <View style={styles.header}>
-        <View style={styles.roomInfo}>
-          <Text style={styles.roomName}>{room.name}</Text>
-          <Pressable onPress={handleShareRoom}>
-            <Text style={styles.roomCode}>Kode: {room.roomCode} 📋</Text>
-          </Pressable>
+        <View style={styles.turnInfo}>
+          <Text style={styles.turnLabel}>GILIRAN</Text>
+          <View style={styles.turnNameRow}>
+            <Text style={styles.turnName} numberOfLines={1}>{currentPlayer?.name || 'Menunggu...'}</Text>
+          </View>
         </View>
         <Pressable style={styles.leaveButton} onPress={handleLeaveRoom}>
           <Text style={styles.leaveButtonText}>✕</Text>
         </Pressable>
       </View>
 
-      {/* Waiting Room */}
-      {gameStatus === 'waiting' && (
-        <View style={styles.waitingContainer}>
-          <Text style={styles.waitingTitle}>⏳ Menunggu Pemain</Text>
-          <Text style={styles.waitingSubtitle}>
-            {players.length}/4 pemain bergabung
-          </Text>
-
-          <View style={styles.playerList}>
-            {players.map((p) => (
-              <View key={p.id} style={styles.playerItem}>
-                <View style={[styles.playerColor, { backgroundColor: p.playerColor }]} />
-                <Text style={styles.playerName}>
-                  {p.playerName} {p.isHost ? '👑' : ''} {p.id === myPlayer.id ? '(Kamu)' : ''}
-                </Text>
-              </View>
-            ))}
+      {/* Players Row */}
+      <View style={styles.playersRow}>
+        {gamePlayers.map((p) => (
+          <View key={p.id} style={[styles.playerBadge, p.isCurrentTurn && styles.playerBadgeActive]}>
+            <View style={[styles.playerDot, { backgroundColor: p.color }]} />
+            <Text style={styles.playerBadgeName} numberOfLines={1}>{p.name.substring(0, 8)}</Text>
+            <Text style={styles.playerBadgePos}>📍{p.position}</Text>
           </View>
+        ))}
+      </View>
 
-          <Text style={styles.shareHint}>
-            Bagikan kode room ke teman untuk bermain bersama!
-          </Text>
+      {/* Game Board - Flex to fill available space */}
+      <View style={styles.boardContainer}>
+        <GameBoard players={gamePlayers} />
+      </View>
 
-          {isHost && (
-            <Pressable
-              style={[
-                styles.startButton,
-                players.length < 2 && styles.startButtonDisabled,
-              ]}
-              onPress={handleStartGame}
-              disabled={players.length < 2}
-            >
-              <Text style={styles.startButtonText}>
-                {players.length < 2 ? 'Tunggu Pemain Lain...' : '🎮 Mulai Game'}
-              </Text>
-            </Pressable>
-          )}
-
-          {!isHost && (
-            <Text style={styles.waitingHost}>Menunggu host memulai game...</Text>
-          )}
-        </View>
-      )}
-
-      {/* Game Playing */}
-      {gameStatus === 'playing' && (
-        <View style={styles.gameContainer}>
-          {/* Compact Header with Turn Info */}
-          <View style={styles.gameHeader}>
-            <View style={styles.turnInfo}>
-              <Text style={styles.turnLabel}>GILIRAN</Text>
-              <Text style={styles.turnName}>{currentPlayer?.name}</Text>
-            </View>
-            <View style={styles.playersRow}>
-              {gamePlayers.map((p) => (
-                <View key={p.id} style={styles.playerBadge}>
-                  <View style={[styles.playerDot, { backgroundColor: p.color }]} />
-                  <Text style={styles.playerBadgeName}>{p.name.substring(0, 6)}</Text>
-                  <Text style={styles.playerBadgePos}>📍{p.position}</Text>
-                </View>
-              ))}
-            </View>
+      {/* Bottom Section - Dice & History */}
+      <View style={styles.bottomSection}>
+        {gameStatus === 'waiting' ? (
+          <View style={styles.waitingContainer}>
+            <Text style={styles.waitingText}>Pemain: {players.length}/4</Text>
+            <Text style={styles.roomCodeText}>Kode: {room.roomCode}</Text>
+            {isHost ? (
+              <Pressable
+                style={[styles.startButton, players.length < 2 && styles.buttonDisabled]}
+                onPress={handleStartGame}
+                disabled={players.length < 2}
+              >
+                <Text style={styles.startButtonText}>🎮 Mulai Game</Text>
+              </Pressable>
+            ) : (
+              <Text style={styles.waitingHostText}>Menunggu host memulai...</Text>
+            )}
           </View>
-
-          {/* Game Board - Responsive Size */}
-          <View style={styles.boardWrapper}>
-            <GameBoard players={gamePlayers} />
-          </View>
-
-          {/* Dice Section - Fixed at Bottom */}
-          <View style={styles.diceSection}>
-            <DiceRoller
-              onRoll={handleDiceRoll}
+        ) : (
+          <>
+            <DiceRoller 
+              onRoll={handleDiceRoll} 
               isDisabled={!isMyTurn() || isAnimating}
               isMyTurn={isMyTurn() && !isAnimating}
             />
-            />
             {!isMyTurn() && (
               <Text style={styles.waitTurnText}>
-                Menunggu {currentPlayer?.name}...
+                ⏳ Menunggu {currentPlayer?.name}...
               </Text>
             )}
-          </View>
-        </View>
-      )}
+          </>
+        )}
+      </View>
 
       {/* Dice Result Modal */}
       <Modal visible={showDiceResult} transparent animationType="fade">
@@ -465,144 +432,86 @@ export default function OnlineGameScreen({ navigation, route }: OnlineGameScreen
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#f0f4f8',
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 6,
     backgroundColor: '#4CAF50',
   },
-  roomInfo: {
-    flex: 1,
-  },
-  roomName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  roomCode: {
-    fontSize: 12,
-    color: '#e8f5e9',
-  },
+
   leaveButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#E53935',
     justifyContent: 'center',
     alignItems: 'center',
   },
   leaveButtonText: {
+    fontSize: 18,
     color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
   },
   waitingContainer: {
-    flex: 1,
-    padding: 24,
-    alignItems: 'center',
-    backgroundColor: '#f0f4f8',
-  },
-  waitingTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
-  },
-  waitingSubtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 24,
-  },
-  playerList: {
-    width: '100%',
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
-  },
-  playerItem: {
-    flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
-  playerColor: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    marginRight: 12,
-  },
-  playerName: {
-    fontSize: 16,
-    color: '#333',
-  },
-  shareHint: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
+
   startButton: {
     backgroundColor: '#4CAF50',
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 20,
   },
-  startButtonDisabled: {
-    backgroundColor: '#ccc',
-  },
+
   startButtonText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
   },
-  waitingHost: {
-    fontSize: 16,
-    color: '#666',
-    fontStyle: 'italic',
-  },
-  // Game Playing Styles - Responsive
-  gameContainer: {
-    flex: 1,
-    backgroundColor: '#1a1a2e',
-  },
-  gameHeader: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#16213e',
-  },
+
   turnInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
+    flex: 1,
   },
   turnLabel: {
-    fontSize: 11,
-    color: '#888',
-    marginRight: 8,
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.8)',
+    fontWeight: '600',
+  },
+  turnNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   turnName: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#fff',
+    flex: 1,
   },
   playersRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    gap: 6,
+    backgroundColor: '#e8f5e9',
   },
   playerBadge: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    paddingHorizontal: 8,
+    backgroundColor: '#fff',
+    paddingHorizontal: 6,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  playerBadgeActive: {
+    borderColor: '#4CAF50',
+    backgroundColor: '#e8f5e9',
   },
   playerDot: {
     width: 10,
@@ -611,31 +520,56 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   playerBadgeName: {
+    flex: 1,
     fontSize: 11,
-    color: '#fff',
-    marginRight: 4,
+    color: '#333',
   },
   playerBadgePos: {
     fontSize: 10,
-    color: '#aaa',
+    color: '#666',
   },
-  boardWrapper: {
+  boardContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  diceSection: {
+  bottomSection: {
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+    paddingTop: 4,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingBottom: 20,
-    backgroundColor: '#16213e',
   },
+  waitingText: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
+  roomCodeText: {
+    fontSize: 12,
+    color: '#4CAF50',
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  buttonDisabled: {
+    backgroundColor: '#ccc',
+  },
+  waitingHostText: {
+    fontSize: 14,
+    color: '#666',
+    fontStyle: 'italic',
+  },
+
   waitTurnText: {
     marginTop: 8,
     fontSize: 14,
-    color: '#888',
+    color: '#666',
     fontStyle: 'italic',
+    textAlign: 'center',
   },
   diceModalOverlay: {
     flex: 1,

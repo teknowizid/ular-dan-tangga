@@ -10,6 +10,37 @@ The `move_history` table has a `user_id` field that is NOT NULL, but for anonymo
 
 ## Solution
 
+### Option 1: Safe Migration (Recommended)
+If you get "policy already exists" error, use this safe migration:
+
+```sql
+-- Run this file in Supabase SQL Editor
+SnakeLadderGame/supabase/08-fix-move-history-safe.sql
+```
+
+### Option 2: Original Migration
+If no conflicts exist:
+
+```sql
+-- Run this file in Supabase SQL Editor
+SnakeLadderGame/supabase/07-fix-move-history-user-id.sql
+```
+
+### Check Database Status First
+```sql
+-- Run this to check current status
+SnakeLadderGame/supabase/check-move-history-status.sql
+```
+
+## Error Handling
+
+### If you get "policy already exists" error:
+```
+ERROR: 42710: policy "Allow all on move_history" for table "move_history" already exists
+```
+
+**Solution**: The policy was already created in a previous run. Use the safe migration script (`08-fix-move-history-safe.sql`) which handles existing policies gracefully by dropping them first.
+
 ### 1. Database Migration
 Run the migration `07-fix-move-history-user-id.sql`:
 
@@ -56,7 +87,9 @@ async recordMove(...) {
 
 ## Files Changed
 
-- `supabase/07-fix-move-history-user-id.sql` - Database migration
+- `supabase/07-fix-move-history-user-id.sql` - Original database migration
+- `supabase/08-fix-move-history-safe.sql` - Safe migration (handles conflicts)
+- `supabase/check-move-history-status.sql` - Status checker
 - `src/services/multiplayerService.ts` - Code fix for recordMove function
 
 ## Status

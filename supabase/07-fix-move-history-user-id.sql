@@ -20,6 +20,7 @@ CREATE INDEX IF NOT EXISTS idx_move_history_player_name ON move_history(player_n
 -- 6. Update RLS policies to work with anonymous users
 DROP POLICY IF EXISTS "Users can view moves in their games" ON move_history;
 DROP POLICY IF EXISTS "System can insert moves" ON move_history;
+DROP POLICY IF EXISTS "Allow all on move_history" ON move_history;
 
 -- Allow anonymous users to view and insert moves
 CREATE POLICY "Allow all on move_history" ON move_history FOR ALL USING (true) WITH CHECK (true);

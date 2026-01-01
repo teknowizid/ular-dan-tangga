@@ -43,6 +43,17 @@ dan project ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - ✅ 📱 Adaptive icon configuration untuk Android devices
 - ✅ 🎨 Background color hijau (#4CAF50) untuk adaptive icon
 
+#### Multiplayer UI Fix
+- ✅ 🎮 OnlineGameScreen UI sekarang identik dengan GameScreen (vs bot)
+- ✅ 🎨 Background color, header style, dan layout yang sama persis
+- ✅ 🔧 Fixed unused imports dan warnings di OnlineGameScreen
+
+#### Android Status Bar Fix
+- ✅ 📱 Fixed header bertabrakan dengan status bar di Android
+- ✅ 🎯 Mengganti SafeAreaView deprecated dengan useSafeAreaInsets modern
+- ✅ 🎨 Status bar color sesuai dengan theme aplikasi (#4CAF50)
+- ✅ 📱 Konsisten di semua Android devices dan screen sizes
+
 ### Changed
 - Board sekarang menggunakan gambar custom sebagai background
 - Logic ular dan tangga disesuaikan dengan posisi di gambar
@@ -50,6 +61,8 @@ dan project ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Background color splash screen dari hijau ke putih
 - App version updated ke 1.6.0
 - Android app icon menggunakan `assets/game-icon.png`
+- OnlineGameScreen UI sekarang identik dengan GameScreen
+- Fixed Android status bar collision dengan header aplikasi
 
 ### Technical
 - Added `CUSTOM_BOARD_CONFIG` di `src/config/boardConfig.ts`
@@ -60,6 +73,11 @@ dan project ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Added snake/ladder sound effects di move processing
 - Added custom splash screen component untuk web compatibility
 - Added winner celebration sound effect saat game berakhir
+- Fixed OnlineGameScreen layout dan styles untuk match GameScreen exactly
+- Removed unused imports dan variables di OnlineGameScreen
+- Fixed Android status bar collision menggunakan useSafeAreaInsets
+- Replaced deprecated SafeAreaView dengan modern safe area handling
+- Updated StatusBar configuration untuk konsistensi cross-platform
 
 ---
 

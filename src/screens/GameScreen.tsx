@@ -6,8 +6,9 @@ import {
   Pressable,
   Alert,
   Modal,
-  SafeAreaView,
+  StatusBar,
 } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useGameStore } from '../store/gameStore'
 import GameBoard from '../components/GameBoard'
 import DiceRoller from '../components/DiceRoller'
@@ -85,6 +86,7 @@ interface GameScreenProps {
 }
 
 export default function GameScreen({ navigation }: GameScreenProps) {
+  const insets = useSafeAreaInsets()
   const [showWinModal, setShowWinModal] = useState(false)
   const [showPauseModal, setShowPauseModal] = useState(false)
   const [showBotDiceModal, setShowBotDiceModal] = useState(false)
@@ -312,7 +314,8 @@ export default function GameScreen({ navigation }: GameScreenProps) {
   const handleExitGame = () => { setShowWinModal(false); setShowWinnerModal(false); resetGame(); navigation.navigate('Home') }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <StatusBar barStyle="light-content" backgroundColor="#4CAF50" translucent={false} />
       {/* Compact Header */}
       <View style={styles.header}>
         <View style={styles.turnInfo}>
@@ -449,7 +452,7 @@ export default function GameScreen({ navigation }: GameScreenProps) {
         onPlayAgain={handlePlayAgain}
         onExit={handleExitGame}
       />
-    </SafeAreaView>
+    </View>
   )
 }
 
