@@ -6,6 +6,21 @@ Format berdasarkan [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 dan project ini mengikuti [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [2.0.0] - 2026-01-02
+
+### 🔐 Persistent Auth & Critical Bot Fixes
+
+### Added
+- ✅ 💾 **Persistent Session**: Login user tersimpan otomatis (AsyncStorage). Tidak perlu login ulang saat tutup aplikasi.
+- ✅ 👤 **Logged-in UI**: Tampilan Home berubah menampilkan Profil & Avatar jika sudah login.
+- ✅ 🚪 **Logout Feature**: Tombol keluar untuk ganti akun dengan mudah.
+
+### Fixed
+- ✅ 🐛 **Bot Infinite Roll**: Memperbaiki bug di mana Bot terus-terusan melempar dadu (race condition fixed).
+- ✅ 🔄 **Game Reset Logic**: Memperbaiki bug state animasi yang 'nyangkut' saat main lagi (Play Again).
+
+---
+
 ## [1.9.0] - 2026-01-02
 
 ### 🐛 Bug Fixes & UI Enhancements
