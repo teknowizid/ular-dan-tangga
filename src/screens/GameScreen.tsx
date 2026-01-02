@@ -349,6 +349,32 @@ export default function GameScreen({ navigation }: GameScreenProps) {
     if (!currentPlayerId) return
     if (!canRoll) return
 
+    // Pre-check for nearest ladder to validate beforehand
+    const ladders = CUSTOM_BOARD_CONFIG.ladders
+    const sortedLadderBottoms = Object.keys(ladders).map(Number).sort((a, b) => a - b)
+    const player = players.find(p => p.id === currentPlayerId)
+    if (!player) return
+    
+    // Check if player is already in restricted zone for teleport checks logic generally
+    // (Though the prompt specifically said restricted DESTINATIONS for teleport)
+    
+    const nextLadderBottom = sortedLadderBottoms.find(b => b > player.position)
+    
+    // Validation logic moved here to give alert BEFORE confirming
+    if (nextLadderBottom) {
+      const targetPos = ladders[nextLadderBottom]
+      if ([91, 93, 99].includes(targetPos)) {
+        setPowerUpModalConfig({
+          type: 'error',
+          title: 'Sinyal Kacau 📡',
+          message: 'Tangga ini terlalu dekat dengan garis finish! Teleport tidak dapat mengunci target.',
+          icon: '🚫'
+        })
+        setShowPowerUpModal(true)
+        return
+      }
+    }
+
     // confirm
     setPowerUpModalConfig({
       type: 'confirmation',
@@ -373,7 +399,6 @@ export default function GameScreen({ navigation }: GameScreenProps) {
         playLadderSound()
 
         // Animate
-        const player = players.find(p => p.id === currentPlayerId)
         animateMovement(currentPlayerId, player?.position || 1, result.position, 0, () => {
           if (result.collision) {
             // handle collision
@@ -395,36 +420,13 @@ export default function GameScreen({ navigation }: GameScreenProps) {
 
   useEffect(() => {
     if (gameStatus !== 'playing' || isPaused || isAnimating) return
-
-    // Get fresh state
-    const state = useGameStore.getState()
-    const currentPlayer = state.players[state.currentPlayerIndex]
-
+    const currentPlayer = players[currentPlayerIndex]
     if (!currentPlayer) return
-
-    // Verify it's actually the bot's turn
-    if (currentPlayer.id.startsWith('bot-') && currentPlayer.isCurrentTurn) {
-      // 1. Check if we're already processing this bot to avoid duplicates
-      if (processingBotId.current === currentPlayer.id) return
-      
-      const botTimer = setTimeout(() => {
-        // 2. Re-check state inside timeout before execution
-        const currentState = useGameStore.getState()
-        const currentNow = currentState.players[currentState.currentPlayerIndex]
-        
-        if (
-          currentState.gameStatus === 'playing' && 
-          !currentState.isPaused && 
-          !currentState.isAnimating &&
-          currentNow?.id === currentPlayer.id
-        ) {
-          handleBotTurn(currentPlayer.id)
-        }
-      }, 1500)
-
+    if (currentPlayer.id.startsWith('bot-')) {
+      const botTimer = setTimeout(() => handleBotTurn(currentPlayer.id), 1500)
       return () => clearTimeout(botTimer)
     }
-  }, [currentPlayerIndex, gameStatus, isPaused, isAnimating, players])
+  }, [currentPlayerIndex, gameStatus, players, isPaused, isAnimating])
 
   const handleBotTurn = (botId: string) => {
     // Prevent double processing
@@ -534,18 +536,38 @@ export default function GameScreen({ navigation }: GameScreenProps) {
 
     const shieldReady = Date.now() > shieldCooldownEnd
     const customDiceReady = Date.now() > customDiceCooldownEnd
+    
+    // Check if in restricted zone (91-100)
+    const currentPlayer = players.find(p => p.id === currentPlayerId)
+    const isRestrictedZone = (currentPlayer?.position || 0) >= 91
+
+    const showRestrictedAlert = () => {
+      setPowerUpModalConfig({
+        type: 'info',
+        title: 'Zona Berbahaya ⚠️',
+        message: 'Power Up tidak dapat digunakan di area krusial (91-100). Buktikan kemampuan murnimu!',
+        icon: '🚫'
+      })
+      setShowPowerUpModal(true)
+    }
 
     return (
       <View style={styles.powerUpsRow}>
         {/* Custom Dice */}
         <Pressable
-          style={[styles.powerUpBtn, !customDiceReady && styles.powerUpDisabled]}
+          style={[styles.powerUpBtn, (!customDiceReady || isRestrictedZone) && styles.powerUpDisabled]}
           onPress={() => {
+            if (isRestrictedZone) {
+               showRestrictedAlert()
+               return
+            }
             if (customDiceReady && canRoll) setShowCustomDiceModal(true)
           }}
         >
           <Text style={styles.powerUpIcon}>🎲</Text>
-          {customDiceReady ? (
+          {isRestrictedZone ? (
+             <Text style={[styles.powerUpLabel, { fontSize: 8 }]}>Zona Akhir</Text>
+          ) : customDiceReady ? (
             <Text style={styles.powerUpLabel}>Pilih</Text>
           ) : (
             <Text style={styles.powerUpTimer}>{getCooldownText(customDiceCooldownEnd)}</Text>
@@ -554,8 +576,24 @@ export default function GameScreen({ navigation }: GameScreenProps) {
 
         {/* Shield */}
         <Pressable
-          style={[styles.powerUpBtn, (!shieldReady && shieldCharges === 0) && styles.powerUpDisabled, shieldCharges > 0 && styles.powerUpActive]}
+          style={[styles.powerUpBtn, ((!shieldReady && shieldCharges === 0) || isRestrictedZone) && styles.powerUpDisabled, shieldCharges > 0 && styles.powerUpActive]}
           onPress={() => {
+            if (shieldCharges > 0) {
+              setPowerUpModalConfig({
+                type: 'info',
+                title: 'Perisai Aktif 🛡️',
+                message: `Sisa ${shieldCharges}x tahan ular! Aman terkendali.`,
+                icon: '🛡️'
+              })
+              setShowPowerUpModal(true)
+              return
+            }
+            
+            if (isRestrictedZone) {
+               showRestrictedAlert()
+               return
+            }
+
             // Only allowing activation if ready and not already stacked?
             // "delay 2 mins when USED". 
             if (shieldReady && shieldCharges === 0) handleActivateShield()
@@ -568,15 +606,6 @@ export default function GameScreen({ navigation }: GameScreenProps) {
               })
               setShowPowerUpModal(true)
             }
-            else if (shieldCharges > 0) {
-              setPowerUpModalConfig({
-                type: 'info',
-                title: 'Perisai Aktif 🛡️',
-                message: `Sisa ${shieldCharges}x tahan ular! Aman terkendali.`,
-                icon: '🛡️'
-              })
-              setShowPowerUpModal(true)
-            }
           }}
         >
           <Text style={styles.powerUpIcon}>🛡️</Text>
@@ -584,13 +613,14 @@ export default function GameScreen({ navigation }: GameScreenProps) {
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{shieldCharges}</Text>
             </View>
-          ) : (
-            !shieldReady && (
+          ) : isRestrictedZone ? (
+             <Text style={[styles.powerUpLabel, { fontSize: 8 }]}>Zona Akhir</Text>
+          ) : (!shieldReady && (
               <Text style={styles.powerUpTimer}>{getCooldownText(shieldCooldownEnd)}</Text>
             )
           )}
           <Text style={[styles.powerUpLabel, shieldCharges > 0 && { color: '#fff', fontWeight: 'bold' }]}>
-            {shieldCharges > 0 ? "Aktif" : "Anti Ular"}
+            {shieldCharges > 0 ? "Aktif" : (isRestrictedZone ? "🚫" : "Anti Ular")}
           </Text>
         </Pressable>
 
