@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import {
   View,
   Text,
@@ -110,6 +110,7 @@ export default function GameScreen({ navigation }: GameScreenProps) {
   const [teleportUsed, setTeleportUsed] = useState(false)
 
   const [showCustomDiceModal, setShowCustomDiceModal] = useState(false)
+  const processingBotId = useRef<string | null>(null)
 
   // PowerUp Confirmation/Info Modal
   const [showPowerUpModal, setShowPowerUpModal] = useState(false)
@@ -403,10 +404,17 @@ export default function GameScreen({ navigation }: GameScreenProps) {
   }, [currentPlayerIndex, gameStatus, players, isPaused, isAnimating])
 
   const handleBotTurn = (botId: string) => {
+    // Prevent double processing
+    if (processingBotId.current === botId) return
+    
     const state = useGameStore.getState()
     if (state.gameStatus !== 'playing' || state.isPaused || state.isAnimating) return
     const botPlayer = state.players[state.currentPlayerIndex]
     if (!botPlayer || botPlayer.id !== botId) return
+    
+    // Lock this bot turn
+    processingBotId.current = botId
+    
     const startPosition = botPlayer.position
     const botResult = Math.floor(Math.random() * 6) + 1
     setBotDiceResult(botResult)
@@ -415,8 +423,12 @@ export default function GameScreen({ navigation }: GameScreenProps) {
     setTimeout(() => {
       setShowBotDiceModal(false)
       const moveResult = processMove(botId, botResult)
+      
       if (moveResult) {
         animateMovement(botId, startPosition, moveResult.position, botResult, () => {
+          // Release lock immediately before collision or turn end
+          processingBotId.current = null
+          
           // Handle collision for bot
           if (moveResult.collision) {
             setCollisionInfo({
@@ -440,6 +452,9 @@ export default function GameScreen({ navigation }: GameScreenProps) {
             setTimeout(() => endPlayerTurn(), delay)
           }
         })
+      } else {
+        // Fallback if move failed
+        processingBotId.current = null
       }
     }, 1500)
   }
@@ -478,7 +493,9 @@ export default function GameScreen({ navigation }: GameScreenProps) {
     useGameStore.setState((state) => ({
       players: state.players.map((p, i) => ({ ...p, position: 1, isCurrentTurn: i === 0, diceResult: undefined })),
       currentPlayerIndex: 0, gameStatus: 'playing', winner: null, moveHistory: [], hasBonusRoll: false, lastCollision: null,
+      isAnimating: false, animatingPlayerId: null,
     }))
+    processingBotId.current = null
   }
   const handleExitGame = () => { setShowWinModal(false); setShowWinnerModal(false); resetGame(); navigation.navigate('Home') }
 

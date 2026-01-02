@@ -243,6 +243,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       currentPlayerId: null,
       hasBonusRoll: false,
       lastCollision: null,
+      isAnimating: false,
+      animatingPlayerId: null,
     })
   },
 
