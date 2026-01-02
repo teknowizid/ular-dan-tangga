@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabase'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { create } from 'zustand'
 import { Player, GameRoom, MoveEvent, CollisionEvent } from '../types/game'
 import { authService, RegisteredUser } from '../services/authService'
@@ -32,6 +33,8 @@ interface GameStore {
   setSelectedBoard: (boardId: string) => void
   updateStats: (isWin: boolean, moves: number) => Promise<void>
   login: (username: string, pin: string, avatar: number) => Promise<{ success: boolean; error?: string }>
+  logout: () => Promise<void>
+  checkSession: () => Promise<void>
   initializeAuth: (session: any) => void
   setCurrentPlayerId: (playerId: string) => void
   createGameRoom: (roomName: string, playerName: string, playerColor: string, avatar?: number, boardTheme?: string) => void
@@ -122,6 +125,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
   login: async (username, pin, avatar) => {
     const { user, error } = await authService.loginOrRegister(username, pin, avatar)
     if (user) {
+      // Save session locally
+      try {
+        await AsyncStorage.setItem('user_session', JSON.stringify(user))
+      } catch (e) {
+        console.error('Failed to save session', e)
+      }
+
       set({
         currentUser: user,
         isAuthenticated: true,
@@ -130,6 +140,35 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return { success: true }
     }
     return { success: false, error: error || 'Login gagal' }
+  },
+
+  logout: async () => {
+    try {
+      await AsyncStorage.removeItem('user_session')
+    } catch (e) {
+      console.error('Failed to clear session', e)
+    }
+    set({
+      currentUser: null,
+      isAuthenticated: false,
+      user: null
+    })
+  },
+
+  checkSession: async () => {
+    try {
+      const jsonValue = await AsyncStorage.getItem('user_session')
+      if (jsonValue != null) {
+        const user = JSON.parse(jsonValue) as RegisteredUser
+        set({
+          currentUser: user,
+          isAuthenticated: true,
+          user: { id: user.id, email: user.username }
+        })
+      }
+    } catch (e) {
+      console.error('Failed to load session', e)
+    }
   },
 
   initializeAuth: (session) => {

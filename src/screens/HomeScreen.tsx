@@ -48,7 +48,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const [alertConfig, setAlertConfig] = useState({ title: '', message: '' })
   const scaleAnim = useRef(new Animated.Value(0)).current
 
-  const { createGameRoom, login, isAuthenticated, currentUser, user, selectedBoard, setSelectedBoard } = useGameStore()
+  const { createGameRoom, login, logout, checkSession, isAuthenticated, currentUser, user, selectedBoard, setSelectedBoard } = useGameStore()
 
   // Custom Alert Helper
   const showCustomAlert = (title: string, message: string) => {
@@ -77,7 +77,11 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     return AVATAR_COLORS[avatar] || AVATAR_COLORS[1]
   }
 
-  // Effect to handle music
+  useEffect(() => {
+    checkSession()
+  }, [])
+
+  // Top level effect to handle music
   useEffect(() => {
     const setupAudio = async () => {
       try {
@@ -231,35 +235,61 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               {!isAuthenticated && <Text style={styles.cardSubtitle}>Isi nama & PIN untuk simpan progress</Text>}
             </View>
 
-            <View style={styles.inputGroup}>
-              <View style={styles.inputWrapper}>
-                <Text style={styles.inputLabel}>Nama Panggilan</Text>
-                <TextInput
-                  style={[styles.input, isAuthenticated && styles.inputDisabled]}
-                  placeholder="Contoh: Jagoan123"
-                  value={playerName}
-                  onChangeText={setPlayerName}
-                  maxLength={12}
-                  editable={!isAuthenticated}
-                  placeholderTextColor="#A0AEC0"
-                />
+            {isAuthenticated ? (
+              <View style={styles.loggedInContainer}>
+                <View style={[styles.bigAvatarBadge, { backgroundColor: getAvatarColor(selectedAvatar) }]}>
+                  <Text style={styles.bigAvatarText}>
+                    {['🐸', '🐷', '🐔', '🐼', '🐶', '🐱'][selectedAvatar - 1] || '👤'}
+                  </Text>
+                </View>
+                <View style={styles.loggedInInfo}>
+                  <Text style={styles.welcomeLabel}>Siap Bermain,</Text>
+                  <Text style={styles.loggedInName}>{currentUser?.username}</Text>
+                  <View style={styles.pinBadge}>
+                    <Text style={styles.pinBadgeText}>PIN Tersimpan 🔒</Text>
+                  </View>
+                </View>
+                <Pressable
+                  style={styles.logoutButton}
+                  onPress={() => {
+                    playClickSound()
+                    logout()
+                    setPlayerName('')
+                    setPin('')
+                  }}
+                >
+                  <Text style={styles.logoutButtonText}>Keluar</Text>
+                </Pressable>
               </View>
+            ) : (
+              <View style={styles.inputGroup}>
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.inputLabel}>Nama Panggilan</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Contoh: Jagoan123"
+                    value={playerName}
+                    onChangeText={setPlayerName}
+                    maxLength={12}
+                    placeholderTextColor="#A0AEC0"
+                  />
+                </View>
 
-              <View style={styles.inputWrapper}>
-                <Text style={styles.inputLabel}>PIN Rahasia</Text>
-                <TextInput
-                  style={[styles.input, isAuthenticated && styles.inputDisabled]}
-                  placeholder="minimal 4 angka"
-                  value={pin}
-                  onChangeText={setPin}
-                  keyboardType="numeric"
-                  maxLength={6}
-                  secureTextEntry
-                  editable={!isAuthenticated}
-                  placeholderTextColor="#A0AEC0"
-                />
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.inputLabel}>PIN Rahasia</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="minimal 4 angka"
+                    value={pin}
+                    onChangeText={setPin}
+                    keyboardType="numeric"
+                    maxLength={6}
+                    secureTextEntry
+                    placeholderTextColor="#A0AEC0"
+                  />
+                </View>
               </View>
-            </View>
+            )}
 
             <View style={styles.divider} />
 
@@ -544,5 +574,71 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#9CA3AF',
     fontWeight: '500',
+  },
+  loggedInContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0FDF4',
+    padding: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#DCFCE7',
+    gap: 16,
+  },
+  bigAvatarBadge: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  bigAvatarText: {
+    fontSize: 30,
+  },
+  loggedInInfo: {
+    flex: 1,
+  },
+  welcomeLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '600',
+  },
+  loggedInName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#15803D',
+    marginBottom: 4,
+  },
+  pinBadge: {
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  pinBadgeText: {
+    fontSize: 10,
+    color: '#166534',
+    fontWeight: '700',
+  },
+  logoutButton: {
+    backgroundColor: '#FEE2E2',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  logoutButtonText: {
+    color: '#DC2626',
+    fontWeight: 'bold',
+    fontSize: 12,
   },
 })
