@@ -5,13 +5,11 @@ import Constants from 'expo-constants'
 // For production builds, these come from app.json extra config
 const supabaseUrl = 
   Constants.expoConfig?.extra?.supabaseUrl || 
-  process.env.EXPO_PUBLIC_SUPABASE_URL || 
-  'https://xsqdyfexvwomwjqheskv.supabase.co'
+  process.env.EXPO_PUBLIC_SUPABASE_URL as string
 
 const supabaseAnonKey = 
   Constants.expoConfig?.extra?.supabaseAnonKey || 
-  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhzcWR5ZmV4dndvbXdqcWhlc2t2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcxNzYyNjAsImV4cCI6MjA4Mjc1MjI2MH0.Je_ZUbiVTSHunVFtQ7PEonBac548lM7WikTFcrg7_8s'
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY as string
 
 /**
  * Supabase client instance
